@@ -7,4 +7,8 @@ public interface UserService {
      User save(UserModel userModel);
 
     void saveVerificationTokenForUser(User user, String token);
+
+    String verify(String token);
+
+    String verifyLogin(UserModel userModel);
 }
