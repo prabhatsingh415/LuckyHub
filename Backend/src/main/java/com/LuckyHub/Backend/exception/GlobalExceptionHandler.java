@@ -28,4 +28,14 @@ public class GlobalExceptionHandler {
                         "message", ex.getMessage()
                 ));
     }
+
+    @ExceptionHandler(org.springframework.web.client.RestClientException.class)
+    public ResponseEntity<Map<String, String>> handleRestClientException(Exception ex) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(Map.of(
+                        "error", "Failed to communicate with Google OAuth servers",
+                        "message", ex.getMessage()
+                ));
+    }
+
 }
