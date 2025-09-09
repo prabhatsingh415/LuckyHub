@@ -1,5 +1,6 @@
 package com.LuckyHub.Backend.service;
 
+import com.LuckyHub.Backend.entity.PasswordToken;
 import com.LuckyHub.Backend.entity.Subscription;
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.entity.VerificationToken;
@@ -7,6 +8,7 @@ import com.LuckyHub.Backend.event.ResendVerificationTokenEvent;
 import com.LuckyHub.Backend.model.SubscriptionStatus;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.model.UserModel;
+import com.LuckyHub.Backend.repository.PasswordTokenRepository;
 import com.LuckyHub.Backend.repository.UserRepository;
 import com.LuckyHub.Backend.repository.VerificationTokenRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,15 +20,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 
 public class UserServiceimpl implements UserService{
-
 
     private final VerificationTokenRepository verificationTokenRepository;
     private final UserRepository userRepository;
@@ -34,14 +32,16 @@ public class UserServiceimpl implements UserService{
     private final AuthenticationManager authenticationManager;
     private final JWTService jwtService;
     private final ApplicationEventPublisher publisher;
+    private final PasswordTokenRepository passwordTokenRepository;
 
-    public UserServiceimpl(VerificationTokenRepository verificationTokenRepository, UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, AuthenticationManager authenticationManager, JWTService jwtService, ApplicationEventPublisher publisher) {
+    public UserServiceimpl(VerificationTokenRepository verificationTokenRepository, UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, AuthenticationManager authenticationManager, JWTService jwtService, ApplicationEventPublisher publisher, PasswordTokenRepository passwordTokenRepository) {
         this.verificationTokenRepository = verificationTokenRepository;
         this.userRepository = userRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.publisher = publisher;
+        this.passwordTokenRepository = passwordTokenRepository;
     }
 
     public User save(UserModel userModel){
@@ -85,35 +85,6 @@ public class UserServiceimpl implements UserService{
 
         // Generate JWT using the User entity
         return jwtService.generateToken(user);
-    }
-
-    @Override
-    public ResponseEntity<?> resendVerifyToken(String oldToken, final HttpServletRequest request, String url) {
-        VerificationToken verificationToken = verificationTokenRepository.findByToken(oldToken);
-
-         if(verificationToken == null){
-             return ResponseEntity
-                     .badRequest()
-                     .body(
-                        Map.of(
-                                "Error",
-                                "Invalid Old Token , Try Sign up again !"
-                        )
-                     );
-         }
-
-
-        User user =  verificationToken.getUser();
-
-       // resending Email using the Event and Event Listener
-         publisher.publishEvent(new ResendVerificationTokenEvent(
-                user,
-                url
-        ));
-
-        return ResponseEntity.ok(Map.of(
-                "message", "Verification link resent to your email"
-        ));
     }
 
     @Override
@@ -163,5 +134,86 @@ public class UserServiceimpl implements UserService{
 
         return "Valid";
     }  //Signup Verification
+
+    @Override
+    public ResponseEntity<?> resendVerifyToken(String oldToken, final HttpServletRequest request, String url) {
+        VerificationToken verificationToken = verificationTokenRepository.findByToken(oldToken);
+
+        if(verificationToken == null){
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            Map.of(
+                                    "Error",
+                                    "Invalid Old Token , Try Sign up again !"
+                            )
+                    );
+        }
+
+
+        User user =  verificationToken.getUser();
+
+        // resending Email using the Event and Event Listener
+        publisher.publishEvent(new ResendVerificationTokenEvent(
+                user,
+                url
+        ));
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Verification link resent to your email"
+        ));
+    }
+
+    @Override
+    public Optional<User> findUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    @Override
+    public void createResendPasswordToken(User user, String token) {
+        PasswordToken passwordToken = new PasswordToken(user, token);
+        passwordTokenRepository.save(passwordToken);
+    }
+
+    @Override
+    public String GeneratePasswordResetURL(String url, String token) {
+        return url
+                + "/savePassword?token="
+                + token;
+    }
+
+    @Override
+    public String validatePasswordToken(String token) {
+        PasswordToken  passwordToken = passwordTokenRepository.findByToken(token);
+
+        if(passwordToken == null){
+            return "Invalid Token !";
+        }
+
+        Calendar calendar = Calendar.getInstance();
+
+        if (passwordToken.getExpirationTime().before(calendar.getTime())) {
+            System.out.println("Verification token is Expired: " + passwordToken);
+            passwordTokenRepository.delete(passwordToken);
+            return "Token Expired !";
+        }
+
+        return "Valid";
+    }
+
+    @Override
+    public Optional<User> getUserByPasswordResetToken(String token) {
+        return Optional.ofNullable(passwordTokenRepository.findByToken(token).getUser());
+    }
+    @Override
+    public void changePassword(User user, String newPassword) {
+        user.setPassword(bCryptPasswordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    @Override
+    public void deletePasswordToken(String token) {
+        passwordTokenRepository.deleteByToken(token);
+    }
 
 }

@@ -53,6 +53,16 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
             // 6. Validate token
             if (jwtService.isTokenValid(token, userDetails)) {
+
+                // check if user is verified
+                Boolean isVerified = (Boolean) jwtService.extractAllClaims(token).get("isVerified");
+                if (isVerified == null || !isVerified) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"status\":403 ,\"error\":\"Account not verified\",\"message\":\"Please verify your email.\"}");
+                    return;
+                }
+
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,

@@ -38,4 +38,31 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleUserNotFoundException(UserNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of(
+                        "error", "User Not Found",
+                        "message", ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(UserEmailNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleUserEmailNotFoundException(UserEmailNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of(
+                        "error", "User Email Not Found",
+                        "message", ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(EmailSendingFailedException.class)
+    public ResponseEntity<Map<String, String>> handleEmailSendingFailedException(EmailSendingFailedException ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                        "error", "Email Sending Failed",
+                        "message", ex.getMessage()
+                ));
+    }
+
 }
