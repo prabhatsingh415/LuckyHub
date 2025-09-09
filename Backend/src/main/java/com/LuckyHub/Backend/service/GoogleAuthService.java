@@ -1,6 +1,9 @@
 package com.LuckyHub.Backend.service;
 
+import com.LuckyHub.Backend.entity.Subscription;
 import com.LuckyHub.Backend.entity.User;
+import com.LuckyHub.Backend.model.SubscriptionStatus;
+import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,17 +36,25 @@ public class GoogleAuthService {
 
         User user = userRepository.findByEmail(email)
                 .orElseGet(() -> {
+                    //Adding Subscription
+                    Subscription subscription = new Subscription();
+                    subscription.setSubscriptionType(SubscriptionTypes.FREE);
+                    subscription.setStatus(SubscriptionStatus.NONE);
+                    subscription.setStartDate(null);
+                    subscription.setExpiringDate(null);
+                    subscription.setPaymentId(null);
+
                     User newUser = new User();
                     newUser.setEmail(email);
-                    System.out.println("Email "+email);
                     newUser.setFirstName(firstName);
-                    System.out.println("firstName "+ firstName);
                     newUser.setLastName(lastName);
-                    System.out.println("last "+lastName);
                     newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
                     newUser.setVerified(true);
                     newUser.setCreatedAt(new Date());
                     newUser.setUpdatedAt(new Date());
+                    newUser.setSubscription(subscription);
+
+                    subscription.setUser(newUser);
                     return userRepository.save(newUser);
                 });
 

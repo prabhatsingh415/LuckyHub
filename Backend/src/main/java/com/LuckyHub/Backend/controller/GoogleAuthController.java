@@ -79,4 +79,3 @@ public class GoogleAuthController {
         }
     }
 }
-//Add Subscription also for new user in oAuth2
