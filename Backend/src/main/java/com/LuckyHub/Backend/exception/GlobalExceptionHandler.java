@@ -1,5 +1,6 @@
 package com.LuckyHub.Backend.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -65,4 +66,25 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<?> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        String message = "Duplicate entry detected. Please check your input.";
+        if (ex.getCause() != null) {
+            message = ex.getRootCause().getMessage();
+        }
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                        "status", "error",
+                        "message", message
+                ));
+    }
+
+    @ExceptionHandler(VideosFromDifferentChannelsException.class)
+    public ResponseEntity<?> handleVideosFromDifferentChannels(VideosFromDifferentChannelsException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "status", "error",
+                        "message", ex.getMessage()
+                ));
+    }
 }

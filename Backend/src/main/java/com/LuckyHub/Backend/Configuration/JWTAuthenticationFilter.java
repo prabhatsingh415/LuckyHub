@@ -1,6 +1,7 @@
 package com.LuckyHub.Backend.Configuration;
 
 import com.LuckyHub.Backend.service.JWTService;
+import com.LuckyHub.Backend.service.RefreshTokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,7 +23,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     private final JWTService jwtService;
     private final UserDetailsService userDetailsService;
 
-    public JWTAuthenticationFilter(JWTService jwtService, UserDetailsService userDetailsService) {
+    public JWTAuthenticationFilter(JWTService jwtService, UserDetailsService userDetailsService, RefreshTokenService refreshTokenService) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
     }
@@ -31,10 +32,16 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
+        String path = request.getServletPath();
+        if (path.equals("/user/refresh-token")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // 1. Extract JWT from "Authorization" header
         final String authHeader = request.getHeader("Authorization");
 
-        // 2. If header is missing OR does not start with "Bearer ", skip and continue the filter chain
+        // 2. If header is missing OR does not start with " Bearer ", skip and continue the filter chain
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -65,7 +72,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
-                                userDetails,
+                                 userDetails,
                                 null,
                                 userDetails.getAuthorities()
                         );

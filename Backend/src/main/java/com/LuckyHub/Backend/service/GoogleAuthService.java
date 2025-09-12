@@ -33,6 +33,10 @@ public class GoogleAuthService {
         String email = userInfo.get("email").toString();
         String firstName = userInfo.getOrDefault("given_name", "").toString();
         String lastName = userInfo.getOrDefault("family_name", "").toString();
+        String avatarURL = userInfo.getOrDefault(
+                "picture",
+                "https://cdn-icons-png.flaticon.com/512/149/149071.png" // default avatar
+        ).toString();
 
         User user = userRepository.findByEmail(email)
                 .orElseGet(() -> {
@@ -53,6 +57,8 @@ public class GoogleAuthService {
                     newUser.setCreatedAt(new Date());
                     newUser.setUpdatedAt(new Date());
                     newUser.setSubscription(subscription);
+                    newUser.setAvatarUrl(avatarURL);
+                    newUser.setWinnersSelectedThisMonth(0);
 
                     subscription.setUser(newUser);
                     return userRepository.save(newUser);

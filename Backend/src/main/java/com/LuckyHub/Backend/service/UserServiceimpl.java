@@ -1,10 +1,8 @@
 package com.LuckyHub.Backend.service;
 
-import com.LuckyHub.Backend.entity.PasswordToken;
-import com.LuckyHub.Backend.entity.Subscription;
-import com.LuckyHub.Backend.entity.User;
-import com.LuckyHub.Backend.entity.VerificationToken;
+import com.LuckyHub.Backend.entity.*;
 import com.LuckyHub.Backend.event.ResendVerificationTokenEvent;
+import com.LuckyHub.Backend.exception.UserNotFoundException;
 import com.LuckyHub.Backend.model.SubscriptionStatus;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.model.UserModel;
@@ -33,8 +31,9 @@ public class UserServiceimpl implements UserService{
     private final JWTService jwtService;
     private final ApplicationEventPublisher publisher;
     private final PasswordTokenRepository passwordTokenRepository;
+    private final RefreshTokenService refreshTokenService;
 
-    public UserServiceimpl(VerificationTokenRepository verificationTokenRepository, UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, AuthenticationManager authenticationManager, JWTService jwtService, ApplicationEventPublisher publisher, PasswordTokenRepository passwordTokenRepository) {
+    public UserServiceimpl(VerificationTokenRepository verificationTokenRepository, UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, AuthenticationManager authenticationManager, JWTService jwtService, ApplicationEventPublisher publisher, PasswordTokenRepository passwordTokenRepository, RefreshTokenService refreshTokenService) {
         this.verificationTokenRepository = verificationTokenRepository;
         this.userRepository = userRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
@@ -42,6 +41,7 @@ public class UserServiceimpl implements UserService{
         this.jwtService = jwtService;
         this.publisher = publisher;
         this.passwordTokenRepository = passwordTokenRepository;
+        this.refreshTokenService = refreshTokenService;
     }
 
     public User save(UserModel userModel){
@@ -62,6 +62,9 @@ public class UserServiceimpl implements UserService{
         user.setUpdatedAt(new Date());
         user.setSubscription(subscription);
 
+        user.setAvatarUrl("https://cdn-icons-png.flaticon.com/512/149/149071.png");
+        user.setWinnersSelectedThisMonth(0);
+
         subscription.setUser(user);
 
         userRepository.save(user);
@@ -70,7 +73,7 @@ public class UserServiceimpl implements UserService{
     }
 
     @Override
-    public String verifyLogin(UserModel userModel) {
+    public Map<String, Object> verifyLogin(UserModel userModel) {
         // Authenticate user
         Authentication authenticate = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -81,10 +84,23 @@ public class UserServiceimpl implements UserService{
 
         // Load the User entity from DB
         User user = userRepository.findByEmail(userModel.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         // Generate JWT using the User entity
-        return jwtService.generateToken(user);
+        String accessToken = jwtService.generateToken(user);
+
+        refreshTokenService.deleteByUserId(user.getId());
+
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
+        user.setUpdatedAt(new Date());
+        long expiresIn = 10 * 60;
+
+        return Map.of(
+                "status", "success",
+                "accessToken", accessToken,
+                "refreshToken", refreshToken.getToken(),
+                "expiresIn", expiresIn
+        );
     }
 
     @Override
@@ -112,7 +128,7 @@ public class UserServiceimpl implements UserService{
     }
 
     @Override
-    public String verify(String token) {
+    public String verifyVerificationToken(String token) {
         VerificationToken verificationToken = verificationTokenRepository.findByToken(token);
 
         if(verificationToken == null){
@@ -143,13 +159,12 @@ public class UserServiceimpl implements UserService{
             return ResponseEntity
                     .badRequest()
                     .body(
-                            Map.of(
-                                    "Error",
-                                    "Invalid Old Token , Try Sign up again !"
-                            )
+                        Map.of(
+                                "Error",
+                                "Invalid Old Token , Try Sign up again !"
+                        )
                     );
         }
-
 
         User user =  verificationToken.getUser();
 
@@ -209,6 +224,30 @@ public class UserServiceimpl implements UserService{
     public void changePassword(User user, String newPassword) {
         user.setPassword(bCryptPasswordEncoder.encode(newPassword));
         userRepository.save(user);
+    }
+
+    @Override
+    public Map<String, Object> getCurrentUserFromToken(String token) {
+        // 1. Extract claims from JWT
+        Map<String, Object> claims = jwtService.extractAllClaims(token);
+
+        // 2. Fetch user from DB (optional: ensures latest data)
+        String email = claims.get("email").toString();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        // 3. Prepare response map
+        Map<String, Object> response = new HashMap<>();
+        response.put("email", user.getEmail());
+        response.put("firstName", user.getFirstName());
+        response.put("lastName", user.getLastName());
+        response.put("avatarUrl", user.getAvatarUrl());
+        response.put("subscriptionType", user.getSubscription().getSubscriptionType().name());
+        response.put("subscriptionStatus", user.getSubscription().getStatus().name());
+        response.put("createdAt", user.getCreatedAt());
+        response.put("winnersSelectedThisMonth", user.getWinnersSelectedThisMonth());
+
+        return response;
     }
 
     @Override

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
 
+import java.util.Map;
 import java.util.Optional;
 
 public interface UserService {
@@ -14,9 +15,9 @@ public interface UserService {
 
     void saveVerificationTokenForUser(User user, String token);
 
-    String verify(String token);
+    String verifyVerificationToken(String token);
 
-    String verifyLogin(UserModel userModel);
+    Map<String, Object> verifyLogin(UserModel userModel);
     ResponseEntity<?>resendVerifyToken(String oldToken,  final HttpServletRequest request, String url);
 
     Optional<User> findUserByEmail(@Email(message = "Invalid email address") @NotBlank(message = "Email cannot be empty!") String email);
@@ -32,4 +33,6 @@ public interface UserService {
     void changePassword(User user, @NotBlank(message = "Password cannot be empty") String newPassword);
 
     void deletePasswordToken(String token);
+
+    Map<String, Object> getCurrentUserFromToken(String token);
 }

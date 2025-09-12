@@ -32,7 +32,7 @@ public class WebSecurityConfig {
                 csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(
                         requests -> requests
-                                .requestMatchers("/signup", "/login", "/verifyRegistration", "/auth/google/callback","/resendToken","/resetPassword","/savePassword").permitAll()
+                                .requestMatchers("/user/signup", "/user/login", "/user/verifyRegistration", "/auth/google/callback","/user/resendToken","/user/refresh-token").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

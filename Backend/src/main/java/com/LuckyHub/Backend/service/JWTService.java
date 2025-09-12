@@ -22,6 +22,8 @@ public class JWTService {
     @Value("${SECRET_KEY}")
     private String secretKey;
 
+    private final long expirationTime = 1000 * 60 * 60;
+
     private SecretKey getSecretKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
@@ -32,12 +34,20 @@ public class JWTService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("email", user.getEmail());
         claims.put("isVerified", user.isVerified());
+        claims.put("firstName", user.getFirstName());
+        claims.put("lastName", user.getLastName());
+        claims.put("avatarUrl", user.getAvatarUrl());
+
+        // Subscription info
+        claims.put("subscriptionType", user.getSubscription().getSubscriptionType().name());
+        claims.put("subscriptionStatus", user.getSubscription().getStatus().name());
+
 
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(user.getEmail())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 10))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(getSecretKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
