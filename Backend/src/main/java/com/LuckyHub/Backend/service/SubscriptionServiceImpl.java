@@ -17,7 +17,7 @@ public class SubscriptionServiceImpl {
             this.userRepository = userRepository;
         }
 
-        @Scheduled(cron = "0 0 0 1 * *")
+        @Scheduled(cron = "0 0 0 1 * ?")
         public void resetMonthlyQuota() {
             List<User> users = userRepository.findAll();
             for (User user : users) {
