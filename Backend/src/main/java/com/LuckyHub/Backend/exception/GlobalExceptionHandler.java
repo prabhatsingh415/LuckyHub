@@ -87,4 +87,32 @@ public class GlobalExceptionHandler {
                         "message", ex.getMessage()
                 ));
     }
+
+    @ExceptionHandler(PlanLimitExceedException.class)
+    public ResponseEntity<Map<String, String>> handlePlanLimitExceed(PlanLimitExceedException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "error", "Plan Limit Exceeded",
+                        "message", ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(PlansGiveawayLimitExceedException.class)
+    public ResponseEntity<Map<String, String>> handlePlansGiveawayLimitExceed(PlansGiveawayLimitExceedException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "error", "Giveaway Limit Exceeded",
+                        "message", ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(JWTTokenNotFoundOrInvalidException.class)
+    public ResponseEntity<Map<String, String>> handleJWTTokenException(JWTTokenNotFoundOrInvalidException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of(
+                        "error", "Invalid or Missing JWT Token",
+                        "message", ex.getMessage()
+                ));
+    }
+
 }

@@ -34,4 +34,7 @@ public class User {
     private Subscription subscription;
 
     private Integer winnersSelectedThisMonth;
+
+    public void setRemainingWinners(int i) {
+    }
 }

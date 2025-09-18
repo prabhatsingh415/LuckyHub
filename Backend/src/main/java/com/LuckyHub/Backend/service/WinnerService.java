@@ -4,5 +4,5 @@ import com.LuckyHub.Backend.model.WinnerRequest;
 import com.LuckyHub.Backend.model.WinnerResponse;
 
 public interface WinnerService {
-    WinnerResponse findWinner(WinnerRequest request);
+    WinnerResponse findWinner(WinnerRequest request, String email);
 }

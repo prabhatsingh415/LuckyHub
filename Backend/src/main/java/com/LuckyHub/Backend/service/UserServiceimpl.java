@@ -48,6 +48,9 @@ public class UserServiceimpl implements UserService{
         Subscription subscription = new Subscription();
         subscription.setSubscriptionType(SubscriptionTypes.FREE);
         subscription.setStatus(SubscriptionStatus.NONE);
+        subscription.setMaxComments(SubscriptionTypes.FREE.getMaxComments());
+        subscription.setMaxWinners(SubscriptionTypes.FREE.getMaxWinners());
+        subscription.setRemainingGiveaways(SubscriptionTypes.FREE.getMaxGiveaways());
         subscription.setStartDate(null);
         subscription.setExpiringDate(null);
         subscription.setPaymentId(null);

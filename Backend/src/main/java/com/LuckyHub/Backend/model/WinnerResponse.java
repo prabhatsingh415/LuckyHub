@@ -1,11 +1,14 @@
 package com.LuckyHub.Backend.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class WinnerResponse {
-    private List<String> winnerNames;
-    private String message;
+   List<Comment> winners;
 }

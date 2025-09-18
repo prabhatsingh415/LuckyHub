@@ -21,7 +21,7 @@ public class Subscription {
         nullable = false
     )
     @Enumerated(EnumType.STRING)
-    private SubscriptionTypes SubscriptionType;
+    private SubscriptionTypes subscriptionType;
 
     private Date startDate;
     private Date expiringDate;
@@ -30,6 +30,10 @@ public class Subscription {
     private SubscriptionStatus status;
 
     private String paymentId;
+
+    private Integer maxComments;
+    private Integer maxWinners;
+    private Integer remainingGiveaways;
 
     @OneToOne(mappedBy = "subscription")
     @JsonBackReference

@@ -1,12 +1,18 @@
 package com.LuckyHub.Backend.service;
 
+import com.LuckyHub.Backend.exception.PlansGiveawayLimitExceedException;
 import com.LuckyHub.Backend.exception.VideosFromDifferentChannelsException;
+import com.LuckyHub.Backend.model.Comment;
+import com.LuckyHub.Backend.model.SubscriptionTypes;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
-import java.util.Map;
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class VideoServiceImpl implements VideoService{
@@ -14,10 +20,126 @@ public class VideoServiceImpl implements VideoService{
     @Value("${YOUTUBE_API_KEY}")
     private String apiKey;
 
-    @Override
-    public Map<String, List<String>> fetchComments(List<String> videoIds, String keyword) {
-        return Map.of();
+    private final RestTemplate restTemplate;
+
+    public VideoServiceImpl(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
     }
+
+    @Override
+    public List<Comment> fetchComments(List<String> videoURLs, String keyword, SubscriptionTypes plan) {
+        int maxCommentsLimit = plan.getMaxComments();
+        int maxGiveaways = plan.getMaxGiveaways();
+
+        if (maxGiveaways == 0) {
+            throw new PlansGiveawayLimitExceedException(
+                    "You have reached the maximum giveaway limit for your plan. Upgrade to get more giveaways!");
+        }
+
+        List<String> videoIds = new ArrayList<>();
+        for(String url : videoURLs){
+            videoIds.add(extractVideoId(url));
+        }
+
+        Map<String, Comment> authorVideoMap = new HashMap<>();
+
+        for (String videoId : videoIds) {
+            int totalFetched = 0;
+            String nextPageToken = null;
+
+            do {
+                String url = "https://youtube.googleapis.com/youtube/v3/commentThreads" +
+                        "?part=snippet,replies" +
+                        "&videoId=" + videoId +
+                        "&maxResults=100" +
+                        (nextPageToken != null ? "&pageToken=" + nextPageToken : "") +
+                        "&key=" + apiKey;
+
+                String json = restTemplate.getForObject(url, String.class);
+
+                List<Comment> comments = parseCommentsFromJson(json, videoId, keyword);
+
+                // Keyword filter
+                if (keyword != null && !keyword.isEmpty()) {
+                    String lowerKey = keyword.toLowerCase();
+                    comments = comments.stream()
+                            .filter(c -> c.getMessage().toLowerCase().contains(lowerKey))
+                            .toList();
+                }
+
+
+                int remaining = maxCommentsLimit - totalFetched;
+                if (comments.size() > remaining) {
+                    comments = comments.subList(0, remaining);
+                }
+
+                for (Comment c : comments) {
+                    String key = c.getAuthorName() + "|" + c.getVideoId();
+                    authorVideoMap.merge(key, c, (existing, incoming) -> {
+                        existing.setFrequency(existing.getFrequency() + 1);
+                        return existing;
+                    });
+                }
+
+                totalFetched += comments.size();
+                nextPageToken = extractNextPageToken(json);
+
+            } while (nextPageToken != null && totalFetched < maxCommentsLimit);
+        }
+
+        return new ArrayList<>(authorVideoMap.values());
+    }
+
+
+    public List<Comment> parseCommentsFromJson(String json, String videoId, String keyword) {
+        List<Comment> comments = new ArrayList<>();
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(json);
+            JsonNode items = root.get("items");
+
+            if(items != null && items.isArray()){
+                for(JsonNode item : items){
+                    JsonNode snippet = item.get("snippet").get("topLevelComment").get("snippet");
+                    String message = snippet.get("textDisplay").asText();
+                    boolean containsKeyword = keyword != null && !keyword.isEmpty()
+                            && message.toLowerCase().contains(keyword.toLowerCase());
+
+                    Comment comment = Comment.builder()
+                            .commentId(item.get("id").asText())
+                            .videoId(videoId)
+                            .authorName(snippet.get("authorDisplayName").asText())
+                            .message(message)
+                            .publishedAt(Instant.parse(snippet.get("publishedAt").asText()))
+                            .containsKeyword(containsKeyword)
+                            .frequency(1)
+                            .build();
+                    comments.add(comment);
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Something went wrong while parsing comments!", e);
+        }
+
+        return comments;
+    }
+
+
+    public String extractNextPageToken(String json) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(json);
+            JsonNode tokenNode = root.get("nextPageToken");
+            if(tokenNode != null){
+                return tokenNode.asText();
+            }
+        } catch (Exception e) {
+           throw new RuntimeException("Something went wrong !");
+        }
+        return null;
+    }
+
 
     @Override
     public boolean verifySameUser(List<String> videoLinks) {
@@ -35,6 +157,39 @@ public class VideoServiceImpl implements VideoService{
         }
 
         return true;
+    }
+
+    @Override
+    public List<Comment> selectWinner(List<Comment> fetchedComments, int numberOfWinners) {
+        Map<String, Comment> authorMap = new HashMap<>();
+        Random random = new Random();
+
+        for (Comment comment : fetchedComments) {
+            authorMap.merge(comment.getAuthorName() + "|" + comment.getVideoId(), comment, (existing, incoming) ->
+                    existing.getFrequency() > incoming.getFrequency() ? existing :
+                            existing.getFrequency() < incoming.getFrequency() ? incoming :
+                                    existing.getPublishedAt().isBefore(incoming.getPublishedAt()) ? existing :
+                                            incoming.getPublishedAt().isBefore(existing.getPublishedAt()) ? incoming :
+                                                    random.nextBoolean() ? existing : incoming
+            );
+        }
+
+        PriorityQueue<Comment> pq = new PriorityQueue<>(
+                (c1, c2) -> {
+                    int freqCompare = Integer.compare(c2.getFrequency(), c1.getFrequency());
+                    if (freqCompare != 0) return freqCompare;
+                    return c1.getPublishedAt().compareTo(c2.getPublishedAt());
+                }
+        );
+
+        pq.addAll(authorMap.values());
+
+        List<Comment> winners = new ArrayList<>();
+        while (!pq.isEmpty() && winners.size() < numberOfWinners) {
+            winners.add(pq.poll());
+        }
+
+        return winners;
     }
 
     private String extractVideoId(String url) {
@@ -66,8 +221,8 @@ public class VideoServiceImpl implements VideoService{
         String apiUrl = "https://www.googleapis.com/youtube/v3/videos?part=snippet&id="
                 + videoId + "&key=" + apiKey;
 
-        RestTemplate restTemplate = new RestTemplate();
-        Map<String, Object> response = restTemplate.getForObject(apiUrl, Map.class);
+        RestTemplate request = restTemplate;
+        Map<String, Object> response = request.getForObject(apiUrl, Map.class);
         List<Map<String, Object>> items = (List<Map<String, Object>>) response.get("items");
 
         if(items == null || items.isEmpty()) {
