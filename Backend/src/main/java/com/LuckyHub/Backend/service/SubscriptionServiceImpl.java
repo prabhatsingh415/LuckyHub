@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class SubscriptionServiceImpl {
+public class SubscriptionServiceImpl implements SubscriptionService {
 
         private final UserRepository userRepository;
 
@@ -21,12 +21,31 @@ public class SubscriptionServiceImpl {
         public void resetMonthlyQuota() {
             List<User> users = userRepository.findAll();
             for (User user : users) {
-                switch (user.getSubscription().getSubscriptionType()) {
-                    case FREE -> user.setRemainingWinners(SubscriptionTypes.FREE.getMaxWinners());
-                    case GOLD -> user.setRemainingWinners(SubscriptionTypes.GOLD.getMaxWinners());
-                    case DIAMOND -> user.setRemainingWinners(SubscriptionTypes.DIAMOND.getMaxWinners());
-                }
+                user.getSubscription().setSubscriptionType(SubscriptionTypes.FREE);
+                user.getSubscription().setRemainingGiveaways(SubscriptionTypes.FREE.getMaxGiveaways());
             }
             userRepository.saveAll(users);
         }
+
+
+    @Override
+    public boolean verifyTheAmount(int subAmount) {
+
+         for (SubscriptionTypes subscriptionTypes : SubscriptionTypes.values()){
+             if(subscriptionTypes.getPrice() == subAmount)return true;
+         }
+
+        return false;
+    }
+
+    @Override
+    public String getPlanByAmount(int subAmount) {
+        if(SubscriptionTypes.FREE.getPrice() == subAmount){
+            return "FREE";
+        }else if (SubscriptionTypes.GOLD.getPrice() == subAmount){
+            return "GOLD";
+        }else {
+            return "DIAMOND";
+        }
+    }
 }

@@ -115,4 +115,21 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(InvalidAmountForAnyPlanException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidAmountException(InvalidAmountForAnyPlanException ex){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "error", "Invalid Plan Amount !",
+                        "message", ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(PaymentNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidAmountException(PaymentNotFoundException ex){
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of(
+                        "error", "Payment Data Not Found !",
+                        "message", ex.getMessage()
+                ));
+    }
 }

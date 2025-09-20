@@ -254,6 +254,17 @@ public class UserServiceimpl implements UserService{
     }
 
     @Override
+    public Long findUserIdByEmail(String email) {
+        return userRepository.findIdByEmail(email);
+
+    }
+
+    @Override
+    public Optional<User> getUserById(Long id) {
+        return userRepository.findUserById(id);
+    }
+
+    @Override
     public void deletePasswordToken(String token) {
         passwordTokenRepository.deleteByToken(token);
     }

@@ -35,4 +35,8 @@ public interface UserService {
     void deletePasswordToken(String token);
 
     Map<String, Object> getCurrentUserFromToken(String token);
+
+    Long findUserIdByEmail(String  email);
+
+    Optional<User> getUserById(Long id);
 }

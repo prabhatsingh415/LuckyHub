@@ -35,6 +35,4 @@ public class User {
 
     private Integer winnersSelectedThisMonth;
 
-    public void setRemainingWinners(int i) {
-    }
 }
