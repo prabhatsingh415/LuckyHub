@@ -40,12 +40,13 @@ public class GoogleAuthService {
         User user = userRepository.findByEmail(email)
                 .orElseGet(() -> {
                     //Adding Subscription
-                    Subscription subscription = new Subscription();
-                    subscription.setSubscriptionType(SubscriptionTypes.FREE);
-                    subscription.setStatus(SubscriptionStatus.NONE);
-                    subscription.setStartDate(null);
-                    subscription.setExpiringDate(null);
-                    subscription.setPaymentId(null);
+                    Subscription subscription = Subscription.builder()
+                            .subscriptionType(SubscriptionTypes.FREE)
+                            .status(SubscriptionStatus.NONE)
+                            .startDate(null)
+                            .expiringDate(null)
+                            .paymentId(null)
+                            .build();
 
                     User newUser = new User();
                     newUser.setEmail(email);

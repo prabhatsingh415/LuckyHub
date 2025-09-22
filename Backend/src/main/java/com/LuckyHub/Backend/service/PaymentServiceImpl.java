@@ -3,11 +3,13 @@ package com.LuckyHub.Backend.service;
 import com.LuckyHub.Backend.entity.Payment;
 import com.LuckyHub.Backend.exception.PaymentNotFoundException;
 import com.LuckyHub.Backend.model.PaymentStatus;
+import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.repository.PaymentRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 
 @Service
@@ -20,7 +22,7 @@ import java.time.LocalDateTime;
         }
 
     @Override
-        public Payment createPartialPayment(Long userId, String planType, BigDecimal amount, String currency, String orderId, String receiptId) {
+        public Payment createPartialPayment(Long userId, SubscriptionTypes planType, BigDecimal amount, String currency, String orderId, String receiptId) {
             Payment payment = new Payment();
             payment.setUserId(userId);
             payment.setPlanType(planType);
@@ -50,5 +52,11 @@ import java.time.LocalDateTime;
             return paymentRepo.findByOrderId(orderId)
                     .orElseThrow(() -> new PaymentNotFoundException("Payment not found"));
         }
+
+    @Override
+    public Payment getPaymentDataToUpgradeService(String paymentId) {
+       Payment payment = paymentRepo.findByPaymentId(paymentId);
+       return payment;
     }
+}
 

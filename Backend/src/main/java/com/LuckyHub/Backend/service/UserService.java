@@ -39,4 +39,6 @@ public interface UserService {
     Long findUserIdByEmail(String  email);
 
     Optional<User> getUserById(Long id);
+
+    void upgradeSubscription(String paymentId);
 }

@@ -32,8 +32,9 @@ public class UserServiceimpl implements UserService{
     private final ApplicationEventPublisher publisher;
     private final PasswordTokenRepository passwordTokenRepository;
     private final RefreshTokenService refreshTokenService;
+    private final PaymentService paymentService;
 
-    public UserServiceimpl(VerificationTokenRepository verificationTokenRepository, UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, AuthenticationManager authenticationManager, JWTService jwtService, ApplicationEventPublisher publisher, PasswordTokenRepository passwordTokenRepository, RefreshTokenService refreshTokenService) {
+    public UserServiceimpl(VerificationTokenRepository verificationTokenRepository, UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, AuthenticationManager authenticationManager, JWTService jwtService, ApplicationEventPublisher publisher, PasswordTokenRepository passwordTokenRepository, RefreshTokenService refreshTokenService, PaymentService paymentService) {
         this.verificationTokenRepository = verificationTokenRepository;
         this.userRepository = userRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
@@ -42,18 +43,20 @@ public class UserServiceimpl implements UserService{
         this.publisher = publisher;
         this.passwordTokenRepository = passwordTokenRepository;
         this.refreshTokenService = refreshTokenService;
+        this.paymentService = paymentService;
     }
 
     public User save(UserModel userModel){
-        Subscription subscription = new Subscription();
-        subscription.setSubscriptionType(SubscriptionTypes.FREE);
-        subscription.setStatus(SubscriptionStatus.NONE);
-        subscription.setMaxComments(SubscriptionTypes.FREE.getMaxComments());
-        subscription.setMaxWinners(SubscriptionTypes.FREE.getMaxWinners());
-        subscription.setRemainingGiveaways(SubscriptionTypes.FREE.getMaxGiveaways());
-        subscription.setStartDate(null);
-        subscription.setExpiringDate(null);
-        subscription.setPaymentId(null);
+        Subscription subscription = Subscription.builder()
+                                    .subscriptionType(SubscriptionTypes.FREE)
+                                    .status(SubscriptionStatus.NONE)
+                                    .maxComments(SubscriptionTypes.FREE.getMaxComments())
+                                    .maxWinners(SubscriptionTypes.FREE.getMaxWinners())
+                                    .remainingGiveaways(SubscriptionTypes.FREE.getMaxGiveaways())
+                                    .startDate(null)
+                                    .expiringDate(null)
+                                    .paymentId(null)
+                                    .build();
 
         User user  = new User();
         user.setFirstName(userModel.getFirstName());
@@ -262,6 +265,47 @@ public class UserServiceimpl implements UserService{
     @Override
     public Optional<User> getUserById(Long id) {
         return userRepository.findUserById(id);
+    }
+
+    @Override
+    public void upgradeSubscription(String paymentId) {
+         //fetching payment data
+         Payment payment = paymentService.getPaymentDataToUpgradeService(paymentId);
+
+         Long userId = payment.getUserId();
+         SubscriptionTypes planType = payment.getPlanType();
+
+         Date startDate = new Date();
+         Calendar cal = Calendar.getInstance();
+         cal.setTime(startDate);
+         cal.add(Calendar.MONTH, 1); // add 1 month
+         Date expiringDate  = cal.getTime();
+
+         SubscriptionStatus status = SubscriptionStatus.ACTIVE;
+
+         Integer maxComments = planType.getMaxComments();
+         Integer maxWinners = planType.getMaxWinners();
+         Integer remainingGiveaways = planType.getMaxGiveaways();
+
+         //building subscription
+         Subscription subscription = Subscription.builder()
+                                     .subscriptionType(planType)
+                                     .startDate(startDate)
+                                     .expiringDate(expiringDate)
+                                     .status(status)
+                                     .paymentId(paymentId)
+                                     .maxComments(maxComments)
+                                     .maxWinners(maxWinners)
+                                     .remainingGiveaways(remainingGiveaways)
+                                     .build();
+
+         Optional<User> optUser = userRepository.findUserById(userId);
+
+         if (optUser.isEmpty()) throw  new UserNotFoundException("optUser not found, unable to upgrade Subscription !");
+
+         User user = optUser.get();
+         user.setSubscription(subscription); //saving updated subscription
+         userRepository.save(user); // updating the user
     }
 
     @Override

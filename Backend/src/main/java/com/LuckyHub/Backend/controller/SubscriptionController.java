@@ -3,6 +3,7 @@ package com.LuckyHub.Backend.controller;
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.exception.InvalidAmountForAnyPlanException;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
+import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.service.PaymentService;
 import com.LuckyHub.Backend.service.SubscriptionService;
 import com.LuckyHub.Backend.service.UserService;
@@ -10,7 +11,9 @@ import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.commons.codec.binary.Hex;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,42 +41,60 @@ public class SubscriptionController {
         this.paymentService = paymentService;
     }
 
+    @Value("${Razorpay_key_Id}")
+    private String key;
+
+    @Value("${Razorpay_key_secret}")
+    private String secret;
+
     @PostMapping("/proceed")
-    public ResponseEntity<?> proceedPayment(HttpServletRequest request, Map<String, Object> data) throws RazorpayException {
-        int subAmount = Integer.parseInt(data.get("amount").toString());
+    public ResponseEntity<?> proceedPayment(HttpServletRequest request, @RequestBody Map<String, Object> data) throws RazorpayException {
 
-        boolean isVerified = subscriptionService.verifyTheAmount(subAmount);
+        BigDecimal subAmount;
+        try {
+            Object amountObj = data.get("amount");
+            if(amountObj == null) throw new InvalidAmountForAnyPlanException("Amount is required");
+            subAmount = new BigDecimal(amountObj.toString());
+        } catch (NumberFormatException e) {
+            throw new InvalidAmountForAnyPlanException("Invalid amount format");
+        }
 
-        if(!isVerified)throw new InvalidAmountForAnyPlanException("The given amount didn't match with any plan !");
 
-        RazorpayClient razorpayClient = new RazorpayClient("key", "secret");
+        if(!subscriptionService.verifyTheAmount(subAmount.intValue())) {
+            throw new InvalidAmountForAnyPlanException("The given amount didn't match with any plan!");
+        }
+
+
+        RazorpayClient razorpayClient = new RazorpayClient(key, secret);
+
 
         Long userId = getUserId(request);
-
         if(userId == null) {
-            return  ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("status", "error", "message", "User Not Found !"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "error", "message", "User Not Found!"));
         }
+
 
         String receiptId = "LHN_" + userId + "_" + LocalDate.now();
 
+
         JSONObject obj = new JSONObject();
-        obj.put("amount", subAmount * 100);
+        obj.put("amount", subAmount.multiply(BigDecimal.valueOf(100)).longValue()); // in paise
         obj.put("currency", "INR");
         obj.put("receipt", receiptId);
 
         Order order = razorpayClient.orders.create(obj);
 
-        String planType = subscriptionService.getPlanByAmount(subAmount);
+        SubscriptionTypes planType = subscriptionService.getPlanByAmount(subAmount.intValue());
 
-       paymentService.createPartialPayment(userId, planType, BigDecimal.valueOf(subAmount), "INR", order.get("id"), receiptId);
+        paymentService.createPartialPayment(userId, planType, subAmount, "INR", order.get("id"), receiptId);
 
         return ResponseEntity.ok(
                 Map.of(
                         "status", "success",
                         "orderId", order.get("id"),
-                        "amount", order.get("amount"),
-                        "currency", order.get("currency"),
+                        "amount", subAmount,
+                        "currency", "INR",
                         "message","Order created successfully!"
                 )
         );
@@ -83,8 +104,8 @@ public class SubscriptionController {
     @PostMapping("/verify")
     public ResponseEntity<?> verifyPayment(HttpServletRequest request, @RequestBody Map<String, Object> data) {
 
-        Long Id = getUserId(request);
-        Optional<User> user = userService.getUserById(Id);
+        Long userId = getUserId(request);
+        Optional<User> user = userService.getUserById(userId);
 
         if (user.isEmpty()) throw new UserNotFoundException("User Not Found For Given Id");
 
@@ -93,20 +114,21 @@ public class SubscriptionController {
             String paymentId = data.get("razorpay_payment_id").toString();
             String signature = data.get("razorpay_signature").toString();
 
-            String secret = "your_secret";
-
             String payload = orderId + "|" + paymentId;
 
+            // HMAC SHA256 using Razorpay secret
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
-            SecretKeySpec secret_key = new SecretKeySpec(secret.getBytes(), "HmacSHA256");
-            sha256_HMAC.init(secret_key);
+            SecretKeySpec secretKey = new SecretKeySpec(secret.getBytes(), "HmacSHA256");
+            sha256_HMAC.init(secretKey);
 
-            String expectedSignature = Base64.getEncoder().encodeToString(
-                    sha256_HMAC.doFinal(payload.getBytes())
-            );
+            byte[] hash = sha256_HMAC.doFinal(payload.getBytes());
+            String expectedSignature = new String(Hex.encodeHex(hash));
 
             if (expectedSignature.equals(signature)) {
+                // Payment verified successfully
                 paymentService.completePayment(orderId, paymentId, true, LocalDateTime.now());
+                userService.upgradeSubscription(paymentId);
+
                 return ResponseEntity.ok(Map.of(
                         "status", "success",
                         "message", "Payment verified successfully!"
@@ -117,6 +139,7 @@ public class SubscriptionController {
                         "message", "Payment verification failed!"
                 ));
             }
+
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of(
                     "status", "error",

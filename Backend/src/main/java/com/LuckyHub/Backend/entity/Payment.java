@@ -1,6 +1,7 @@
 package com.LuckyHub.Backend.entity;
 
 import com.LuckyHub.Backend.model.PaymentStatus;
+import com.LuckyHub.Backend.model.SubscriptionTypes;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -19,7 +20,8 @@ public class Payment {
     private Long userId;
 
     @Column(nullable = false)
-    private String planType;
+    @Enumerated(EnumType.STRING)
+    private SubscriptionTypes planType;
 
     @Column(nullable = false)
     private BigDecimal amount;
