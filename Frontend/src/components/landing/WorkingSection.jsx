@@ -31,7 +31,7 @@ function WorkingSection() {
   ];
 
   return (
-    <div className="bg-[#111111] flex flex-col justify-center items-center p-8 gap-8 dark:text-white">
+    <div className="bg-[#fafafa] flex flex-col justify-center items-center p-8 gap-8 dark:bg-[#111111] dark:text-white">
       <div className="flex flex-col items-center gap-4 mb-8">
         <h2 className="text-4xl">How It Works</h2>
         <p className="text-xl text-[#a1a1a1]">
@@ -39,7 +39,7 @@ function WorkingSection() {
         </p>
       </div>
 
-      <div className="flex justify-center items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-center items-center gap-4">
         {steps.map((step) => (
           <div
             key={step.step}

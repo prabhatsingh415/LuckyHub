@@ -10,7 +10,6 @@ function Footer() {
   const theme = useSelector((state) => state.theme.mode);
   const naviate = useNavigate();
 
-  let iconColor = theme === "dark" ? "#FFFFFF" : "#000000";
   return (
     <footer className="flex flex-col md:grid grid-cols-3 grid-rows-2 justify-center items-center  border-t-2  border-t-[#f7f7f7] dark:border-t-[#0f0f0f]">
       <div className="flex items-center mr-2 md:mr-8">
@@ -65,7 +64,7 @@ function Footer() {
 
       <hr className="md:col-span-3 border-t-2  border-t-[#f7f7f7] dark:border-t-[#121212] w-[calc(100%-4rem)] md:w-[calc(100%-8rem)] mx-auto my-8" />
 
-      <div className="flex flex-col justify-center items-center md:col-span-3 md:row-start-3gap-4 dark:text-white text-sm mb-8">
+      <div className="flex flex-col justify-center items-center md:col-span-3 md:row-start-3gap-4 dark:text-[#a1a1a1] text-sm mb-8">
         <p>© 2025 LuckyHub. All rights reserved. </p>
         <p>Developed By Prabhat Singh</p>
       </div>
