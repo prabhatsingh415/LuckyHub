@@ -83,7 +83,7 @@ function Subscription() {
           <div
             key={plan.id}
             className={`flex flex-col justify-between items-center border border-[#a1a1a1] rounded-xl p-8 gap-4 transition-all duration-500 
-              w-80 min-h-[500px] 
+             w-80 md:w-50 lg:w-80 min-h-[500px] 
               ${
                 plan.id === 2
                   ? "md:-mt-6 md:shadow-xl md:scale-105 md:z-10 md:bg-white md:dark:bg-[#1a1a1a]"

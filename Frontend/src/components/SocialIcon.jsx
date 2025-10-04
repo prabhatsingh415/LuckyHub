@@ -1,7 +1,7 @@
 import React from "react";
 import { useSelector } from "react-redux";
 
-function SocialIcon({ src, size = 24, className = "" }) {
+function SocialIcon({ src, size = 24, className = "", onClick }) {
   const theme = useSelector((state) => state.theme.mode);
   const isDark = theme === "dark";
 
@@ -9,6 +9,7 @@ function SocialIcon({ src, size = 24, className = "" }) {
     <div
       className={`cursor-pointer ${className} transition-transform duration-300 hover:scale-110`}
       style={{ width: size, height: size }}
+      onClick={onClick}
     >
       <img
         src={src}

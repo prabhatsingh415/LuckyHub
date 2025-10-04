@@ -32,7 +32,7 @@ function CTASection() {
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 w-full sm:w-1/2">
           <button
             onClick={() => navigate("/signUp")}
-            className="h-10 md:h-12 w-full md:w-1/3 bg-[var(--orange)] text-sm md:text-lg rounded-md font-bold text-black dark:text-white hover:scale-105 transition-transform cursor-pointer flex items-center justify-center"
+            className="h-10 md:h-12 w-full lg:w-2/5 bg-[var(--orange)] text-sm md:text-lg rounded-md font-bold text-black dark:text-white hover:scale-105 transition-transform cursor-pointer flex items-center justify-center"
           >
             Get Started
             <ArrowRight className="inline-block ml-2" size={16} />
@@ -40,7 +40,7 @@ function CTASection() {
 
           <button
             onClick={() => navigate("/signIn")}
-            className="h-10 md:h-12 w-full md:w-1/5 bg-[#221d14] text-xs md:text-sm rounded-md font-bold border border-[#a1a1a1] text-white hover:scale-105 transition-transform cursor-pointer"
+            className="h-10 md:h-12 w-full lg:w-1/5 bg-[#221d14] text-xs md:text-sm rounded-md font-bold border border-[#a1a1a1] text-white hover:scale-105 transition-transform cursor-pointer"
           >
             Sign In
           </button>

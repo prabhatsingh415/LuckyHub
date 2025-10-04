@@ -57,8 +57,23 @@ function Footer() {
 
       <div className="flex justify-center items-center">
         <nav className="flex gap-8">
-          <SocialIcon src={XIcon} size={28} />
-          <SocialIcon src={LinkedInIcon} size={28} />
+          <SocialIcon
+            src={XIcon}
+            size={28}
+            onClick={() =>
+              window.open("https://x.com/Prabhatsingh415", "_blank")
+            }
+          />
+          <SocialIcon
+            src={LinkedInIcon}
+            size={28}
+            onClick={() =>
+              window.open(
+                "https://www.linkedin.com/in/prabhat-singh-rj415/",
+                "_blank"
+              )
+            }
+          />
         </nav>
       </div>
 

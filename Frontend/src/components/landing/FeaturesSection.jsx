@@ -46,11 +46,11 @@ function FeaturesSection() {
         </p>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-center items-center gap-8">
+      <div className="flex flex-col md:grid grid-cols-2 grid-rows-2 lg:flex lg:flex-row justify-center items-center gap-8">
         {featuresData.map((feature, index) => (
           <div
             key={index}
-            className="w-full md:w-3/4 flex flex-col justify-center items-start gap-4 border border-[#a1a1a1] p-8 rounded-xl transform-gpu hover:scale-105 transition-transform duration-500 ease-out"
+            className="w-full md:w-[300px] lg:w-3/4 md:min-h-[200px] lg:min-h-0 flex flex-col justify-center items-start gap-4 border border-[#a1a1a1] p-8 rounded-xl transform-gpu hover:scale-105 transition-transform duration-500 ease-out"
           >
             <div
               className={`p-2 flex justify-center items-center rounded-lg
