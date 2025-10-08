@@ -1,11 +1,11 @@
-import React from "react";
 import { logoDarkSvg, logoLightSvg } from "..";
 import Form from "../components/Form";
 import { useForm } from "react-hook-form";
-import { Lock, LockOpen, Mail, User } from "lucide-react";
+import { Lock, Mail } from "lucide-react";
+import { useSelector } from "react-redux";
 
 function SignUp() {
-  const theme = localStorage.getItem("theme");
+  const theme = useSelector((state) => state.theme.mode);
   const {
     register,
     handleSubmit,
@@ -13,23 +13,6 @@ function SignUp() {
     formState: { errors },
   } = useForm();
   const formData = [
-    {
-      label: "Full Name",
-      type: "text",
-      icon: (
-        <User
-          size={20}
-          className="absolute  top-1/2 transform -translate-y-1/2 text-gray-400"
-        />
-      ),
-      placeholder: "Enter your full name",
-      register: register("name", {
-        required: "Name is required",
-        max: 30,
-        min: 2,
-        message: "Invalid name",
-      }),
-    },
     {
       label: "Email",
       type: "email",
@@ -61,27 +44,10 @@ function SignUp() {
         message: "Invalid Password",
       }),
     },
-    {
-      label: "Confirm Password",
-      type: "text",
-      icon: (
-        <LockOpen
-          size={18}
-          className="absolute top-1/2 transform -translate-y-1/2 text-gray-400"
-        />
-      ),
-      placeholder: "Confirm your password",
-      register: register("confirmPassword", {
-        required: "Confirm Password is required",
-        message: "Invalid Confirm Password",
-      }),
-    },
   ];
 
-  const heading = "Create account";
-  const headingClassName = "text-3xl";
-  const subHeading = "Start your journey as a content creator";
-  const subHeadingClassName = "text-sm text-[#a1a1a1] mb-8";
+  const heading = "Welcome Back!";
+  const headingClassName = "text-3xl mb-4";
 
   return (
     <div className="w-full flex flex-col justify-center items-center dark:text-white">
@@ -97,13 +63,12 @@ function SignUp() {
         <Form
           formData={formData}
           headingData={{ heading, headingClassName }}
-          subHeadingData={{ subHeading, subHeadingClassName }}
           errors={errors}
           className="bg-[#f2f2f5] dark:bg-[#121212] w-full pl-10 p-2 border border-[#171717] rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 "
-          showCheckMark={true}
           submitBtnText="Create Account"
           btnClassName="w-full bg-[var(--orange)] rounded-lg p-2  text-black dark:text-white hover:scale-105 transition-transform "
           isContainsGoogleSignIn={true}
+          isSignInPage={true}
         />
       </div>
     </div>
