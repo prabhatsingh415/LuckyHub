@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Input from "./Input";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -8,6 +8,7 @@ export default function Form({
   className = "",
   headingData = "",
   subHeadingData = "",
+  onSubmit,
   errors,
   showCheckMark = false,
   submitBtnText = "Submit",
@@ -15,7 +16,6 @@ export default function Form({
   isContainsGoogleSignIn = true,
   isSignInPage = false,
 }) {
-  // store visibility for each password input
   const [visiblePasswords, setVisiblePasswords] = useState({});
 
   const togglePassword = (index) => {
@@ -28,7 +28,7 @@ export default function Form({
   const navigate = useNavigate();
 
   return (
-    <form className="w-full p-4">
+    <form className="w-full p-4" onSubmit={onSubmit}>
       <div className="w-full my-4 flex flex-col justify-center gap-2">
         <div className="flex flex-col justify-center items-center gap-2">
           {headingData && (
