@@ -39,7 +39,16 @@ public class UserController {
     @PostMapping("/signup")
     public ResponseEntity<?> signUp(@RequestBody  UserModel userModel,
                                                       final HttpServletRequest request){
-       User user  =  userService.save(userModel);
+       User user = userService.save(userModel);
+
+        if(user == null){
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of(
+                            "status", "failed",
+                            "message", "A user is already registered with this email!"
+                    ));
+        }
 
        //Event for sending mail
        publisher.publishEvent(new RegistrationCompleteEvent(

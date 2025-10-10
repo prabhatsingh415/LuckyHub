@@ -47,6 +47,10 @@ public class UserServiceimpl implements UserService{
     }
 
     public User save(UserModel userModel){
+         Optional<User> optUser = userRepository.findByEmail(userModel.getEmail());
+
+         if(optUser.isPresent()) return null;
+
         Subscription subscription = Subscription.builder()
                                     .subscriptionType(SubscriptionTypes.FREE)
                                     .status(SubscriptionStatus.NONE)
@@ -111,19 +115,21 @@ public class UserServiceimpl implements UserService{
 
     @Override
     public void saveVerificationTokenForUser(User user, String token) {
-        // Check if a token already exists for this user
         VerificationToken existingToken = verificationTokenRepository.findByUser(user);
 
         if (existingToken != null) {
             // Update existing token and expiration time
             existingToken.setToken(token);
             existingToken.setExpirationTime(calculateExpirationTime());
-            verificationTokenRepository.save(existingToken); // update
+            verificationTokenRepository.save(existingToken);
         } else {
-            // No existing token → throw exception or handle as needed
-            throw new IllegalStateException("No existing verification token found for user: " + user.getEmail());
+            // Create a new verification token for first-time signup
+            VerificationToken newToken = new VerificationToken(user, token);
+            newToken.setExpirationTime(calculateExpirationTime());
+            verificationTokenRepository.save(newToken);
         }
     }
+
 
     // Utility method to calculate expiration
     private Date calculateExpirationTime() {

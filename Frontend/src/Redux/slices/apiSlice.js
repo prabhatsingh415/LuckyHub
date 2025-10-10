@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+console.log("API Base URL:", import.meta.env.VITE_API_BASE_URL);
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
@@ -9,14 +10,14 @@ export const apiSlice = createApi({
   endpoints: (builder) => ({
     signUp: builder.mutation({
       query: (data) => ({
-        url: "/signup",
+        url: "/user/signup",
         method: "POST",
         body: data,
       }),
     }),
     signIn: builder.mutation({
       query: (data) => ({
-        url: "/signin",
+        url: "/user/login",
         method: "POST",
         body: data,
       }),
