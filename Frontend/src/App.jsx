@@ -6,6 +6,8 @@ import SignUp from "./pages/SignUp";
 import SignIn from "./pages/SignIn";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import VerifyUserPage from "./pages/verfyUserPage";
+import Home from "./pages/Home";
 import "./App.css";
 
 function App() {
@@ -20,8 +22,10 @@ function App() {
     { path: "/", element: isSignIn ? <Home /> : <LandingPage /> },
     { path: "/signup", element: <SignUp /> },
     { path: "/signin", element: <SignIn /> },
+    { path: "/home", element: <Home /> },
     { path: "/terms-of-condition", element: <TermsOfService /> },
     { path: "/privacy-policy", element: <PrivacyPolicy /> },
+    { path: "/verify_user", element: <VerifyUserPage /> },
   ]);
 
   return (

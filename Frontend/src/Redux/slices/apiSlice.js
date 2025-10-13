@@ -22,7 +22,14 @@ export const apiSlice = createApi({
         body: data,
       }),
     }),
+    verifyUser: builder.query({
+      query: (token) => ({
+        url: `/user/verifyRegistration?token=${token}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
-export const { useSignUpMutation, useSignInMutation } = apiSlice;
+export const { useSignUpMutation, useSignInMutation, useVerifyUserQuery } =
+  apiSlice;

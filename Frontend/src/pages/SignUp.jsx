@@ -23,7 +23,7 @@ function SignUp() {
         />
       ),
       placeholder: "Enter your first name",
-      register: register("first name", {
+      register: register("firstName", {
         required: "First name is required",
         minLength: { value: 2, message: "Too short" },
         maxLength: { value: 30, message: "Too long" },
@@ -40,7 +40,7 @@ function SignUp() {
         />
       ),
       placeholder: "Enter your last name",
-      register: register("last name", {
+      register: register("lastName", {
         required: "Last name is required",
         minLength: { value: 2, message: "Too short" },
         maxLength: { value: 30, message: "Too long" },

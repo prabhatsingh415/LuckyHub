@@ -9,6 +9,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
 
@@ -37,8 +38,7 @@ public class GoogleAuthController {
 
     @GetMapping("/callback")
     public ResponseEntity<?> handleGoogleCallback(@RequestParam("code") String code){
-        System.out.println("Request reached");
-
+        log.info(" oauth Request reached !");
         try{
            String tokenEndpoint = "https://oauth2.googleapis.com/token";
 
@@ -68,7 +68,19 @@ public class GoogleAuthController {
             if (userInfoResponse.getStatusCode() == HttpStatus.OK && userInfoResponse.getBody() != null) {
                 Map userInfo = userInfoResponse.getBody();
                 String jwt = googleAuthService.processUser(userInfo);
-                return ResponseEntity.ok(Collections.singletonMap("token", jwt));
+                ResponseCookie cookie = ResponseCookie.from("token", jwt)
+                        .httpOnly(true)
+                        .secure(true)
+                        .path("/")
+                        .maxAge(7 * 24 * 60 * 60)
+                        .sameSite("Strict")
+                        .build();
+
+                HttpHeaders resHeaders = new HttpHeaders();
+                resHeaders.set(HttpHeaders.SET_COOKIE, cookie.toString());
+                resHeaders.setLocation(URI.create("http://localhost:5173/home"));
+                return new ResponseEntity<>(resHeaders, HttpStatus.FOUND);
+
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body("User info not found or empty response");

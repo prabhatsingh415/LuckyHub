@@ -25,6 +25,15 @@ export default function Form({
     }));
   };
 
+  const handleAuthWithGoogle = () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const redirectUri = "http://localhost:8080/auth/google/callback";
+    const scope = "openid email profile";
+    const responseType = "code";
+
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=${responseType}&scope=${scope}`;
+  };
+
   const navigate = useNavigate();
 
   return (
@@ -142,7 +151,10 @@ export default function Form({
       </div>
 
       {isContainsGoogleSignIn && (
-        <button className="w-full flex items-center justify-center gap-2 border px-4 py-2 rounded-md hover:bg-gray-100 mt-4">
+        <button
+          onClick={handleAuthWithGoogle}
+          className="w-full flex items-center justify-center gap-2 border px-4 py-2 rounded-md hover:bg-gray-100 mt-4"
+        >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
               fill="#4285F4"

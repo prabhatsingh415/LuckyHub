@@ -53,7 +53,7 @@ public class UserController {
        //Event for sending mail
        publisher.publishEvent(new RegistrationCompleteEvent(
                 user,
-               createURL(request)
+                "http://localhost:5173/verify_user"
        ));
 
         return ResponseEntity.ok(Map.of(
@@ -65,9 +65,18 @@ public class UserController {
 
     //For verifying user through E-Mail
     @GetMapping("/verifyRegistration")
-    public String verifyUser(@RequestParam("token") String token){
-      if(userService.verifyVerificationToken(token).equalsIgnoreCase("Valid")) return "Success !";
-      return "Invalid Token !";
+    public ResponseEntity<?> verifyUser(@RequestParam("token") String token){
+      if(userService.verifyVerificationToken(token).equalsIgnoreCase("Valid"))
+          return ResponseEntity.ok(Map.of(
+             "status", "success",
+             "message", "Account activated !"
+          ));
+      return ResponseEntity.badRequest().body(
+              Map.of(
+                      "status", "Failed",
+                      "message", "Unable to activate Account !"
+              )
+      );
     }
 
     @PostMapping("/login")
