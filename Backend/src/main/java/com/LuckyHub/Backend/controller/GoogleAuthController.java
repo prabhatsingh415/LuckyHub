@@ -67,8 +67,9 @@ public class GoogleAuthController {
 
             if (userInfoResponse.getStatusCode() == HttpStatus.OK && userInfoResponse.getBody() != null) {
                 Map userInfo = userInfoResponse.getBody();
-                String jwt = googleAuthService.processUser(userInfo);
-                ResponseCookie cookie = ResponseCookie.from("token", jwt)
+                Map<String, Object> tokens = googleAuthService.processUser(userInfo);
+
+                ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", (String) tokens.get("refreshToken"))
                         .httpOnly(true)
                         .secure(true)
                         .path("/")
@@ -77,9 +78,9 @@ public class GoogleAuthController {
                         .build();
 
                 HttpHeaders resHeaders = new HttpHeaders();
-                resHeaders.set(HttpHeaders.SET_COOKIE, cookie.toString());
+                resHeaders.set(HttpHeaders.SET_COOKIE, refreshCookie.toString());
                 resHeaders.setLocation(URI.create("http://localhost:5173/home"));
-                return new ResponseEntity<>(resHeaders, HttpStatus.FOUND);
+                return new ResponseEntity<>(resHeaders, HttpStatus.FOUND); // TODO: Add JWT tokens to the response headers before returning
 
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
