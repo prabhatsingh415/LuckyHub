@@ -45,7 +45,8 @@ public class WebSecurityConfig {
                                 "/user/verifyRegistration",
                                 "/auth/google/callback",
                                 "/user/resendToken",
-                                "/user/refresh-token"
+                                "/user/refresh-token",
+                                "/swagger-ui/**", "/v3/api-docs/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

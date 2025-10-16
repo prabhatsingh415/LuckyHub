@@ -330,6 +330,16 @@ public class UserServiceimpl implements UserService{
         userRepository.save(user); // updating the user with updated/new subscription
     }
 
+    @Override
+    public UserModel convertToUserModel(User user) {
+        UserModel userModel = new UserModel();
+        userModel.setEmail(user.getEmail());
+        userModel.setFirstName(user.getFirstName());
+        userModel.setLastName(user.getLastName());
+        userModel.setPassword(user.getPassword());
+        return userModel;
+    }
+
 
     @Override
     public void deletePasswordToken(String token) {

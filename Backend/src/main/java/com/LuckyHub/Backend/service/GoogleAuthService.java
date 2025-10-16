@@ -1,9 +1,11 @@
 package com.LuckyHub.Backend.service;
 
+import com.LuckyHub.Backend.entity.RefreshToken;
 import com.LuckyHub.Backend.entity.Subscription;
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.model.SubscriptionStatus;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
+import com.LuckyHub.Backend.model.UserModel;
 import com.LuckyHub.Backend.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,18 +19,20 @@ public class GoogleAuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JWTService jwtService;
+    private final RefreshTokenService refreshTokenService;
+    private final UserService userService;
 
     public GoogleAuthService(UserRepository userRepository,
                              PasswordEncoder passwordEncoder,
-                             JWTService jwtService) {
+                             JWTService jwtService, RefreshTokenService refreshTokenService, UserService userService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
+        this.refreshTokenService = refreshTokenService;
+        this.userService = userService;
     }
 
     // Process Google user info map and return JWT
-    public String processUser(Map<String, Object> userInfo) {
+    public RefreshToken processUser(Map<String, Object> userInfo) {
         String email = userInfo.get("email").toString();
         String firstName = userInfo.getOrDefault("given_name", "").toString();
         String lastName = userInfo.getOrDefault("family_name", "").toString();
@@ -65,6 +69,6 @@ public class GoogleAuthService {
                 });
 
         // Generate JWT token
-        return jwtService.generateToken(user);
+       return refreshTokenService.createRefreshToken(user.getEmail());
     }
 }

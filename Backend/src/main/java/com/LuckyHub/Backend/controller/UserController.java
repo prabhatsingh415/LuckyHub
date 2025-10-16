@@ -12,10 +12,13 @@ import com.LuckyHub.Backend.service.RefreshTokenService;
 import com.LuckyHub.Backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -66,11 +69,43 @@ public class UserController {
     //For verifying user through E-Mail
     @GetMapping("/verifyRegistration")
     public ResponseEntity<?> verifyUser(@RequestParam("token") String token){
-      if(userService.verifyVerificationToken(token).equalsIgnoreCase("Valid"))
+      if(userService.verifyVerificationToken(token).equalsIgnoreCase("Valid")){
+          String email = jwtService.extractUserEmail(token);
+          Optional<User> user = userService.findUserByEmail(email);
+
+          if(user.isEmpty()){
+              return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                      Map.of(
+                              "status", "success",
+                              "message", "Account activated!"
+                            )
+              );
+          }
+
+          UserModel userModel = userService.convertToUserModel(user.get());
+          Map<String, Object> tokens = userService.verifyLogin(userModel);
+
+          String accessToken = tokens.getOrDefault("accessToken", "").toString();
+          String refreshToken = tokens.getOrDefault("refreshToken", "").toString();
+
+          ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+                  .httpOnly(true)
+                  .secure(true)
+                  .path("/")
+                  .maxAge(14 * 24 * 60 * 60)
+                  .sameSite("Strict")
+                  .build();
+
+          HttpHeaders resHeaders = new HttpHeaders();
+          resHeaders.add(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
           return ResponseEntity.ok(Map.of(
-             "status", "success",
-             "message", "Account activated !"
+                  "status", "success",
+                  "message", "Account activated!",
+                  "accessToken", accessToken
           ));
+
+      }
       return ResponseEntity.badRequest().body(
               Map.of(
                       "status", "Failed",

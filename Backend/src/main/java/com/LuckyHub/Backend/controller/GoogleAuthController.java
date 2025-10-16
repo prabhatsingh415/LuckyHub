@@ -1,5 +1,6 @@
 package com.LuckyHub.Backend.controller;
 
+import com.LuckyHub.Backend.entity.RefreshToken;
 import com.LuckyHub.Backend.service.GoogleAuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -67,21 +68,21 @@ public class GoogleAuthController {
 
             if (userInfoResponse.getStatusCode() == HttpStatus.OK && userInfoResponse.getBody() != null) {
                 Map userInfo = userInfoResponse.getBody();
-                Map<String, Object> tokens = googleAuthService.processUser(userInfo);
 
-                ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", (String) tokens.get("refreshToken"))
+                RefreshToken refreshToken = googleAuthService.processUser(userInfo); // Tokens
+
+                ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken.getToken())
                         .httpOnly(true)
                         .secure(true)
                         .path("/")
-                        .maxAge(7 * 24 * 60 * 60)
+                        .maxAge(14 * 24 * 60 * 60)
                         .sameSite("Strict")
                         .build();
 
                 HttpHeaders resHeaders = new HttpHeaders();
                 resHeaders.set(HttpHeaders.SET_COOKIE, refreshCookie.toString());
                 resHeaders.setLocation(URI.create("http://localhost:5173/home"));
-                return new ResponseEntity<>(resHeaders, HttpStatus.FOUND); // TODO: Add JWT tokens to the response headers before returning
-
+                return new ResponseEntity<>(resHeaders, HttpStatus.FOUND);
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body("User info not found or empty response");

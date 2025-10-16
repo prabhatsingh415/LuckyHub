@@ -41,4 +41,6 @@ public interface UserService {
     Optional<User> getUserById(Long id);
 
     void upgradeSubscription(String paymentId);
+
+    UserModel convertToUserModel(User user);
 }
