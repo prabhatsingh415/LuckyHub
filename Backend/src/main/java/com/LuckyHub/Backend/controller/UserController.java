@@ -10,6 +10,7 @@ import com.LuckyHub.Backend.model.UserModel;
 import com.LuckyHub.Backend.service.JWTService;
 import com.LuckyHub.Backend.service.RefreshTokenService;
 import com.LuckyHub.Backend.service.UserService;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpHeaders;
@@ -18,7 +19,6 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -124,25 +124,49 @@ public class UserController {
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
-        String refreshTokenStr = request.get("refreshToken");
+    public ResponseEntity<?> refreshToken(HttpServletRequest request) {
+        // Extract refresh token from cookie
+        String refreshTokenStr = null;
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("refreshToken".equals(cookie.getName())) {
+                    refreshTokenStr = cookie.getValue();
+                    break;
+                }
+            }
+        }
 
+        if (refreshTokenStr == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Refresh token is missing"));
+        }
+
+        // Validate the refresh token
         RefreshToken token = refreshTokenService.findByToken(refreshTokenStr)
                 .orElseThrow(() -> new RefreshTokenNotFound("Refresh token not found"));
 
         refreshTokenService.verifyExpiration(token);
 
-
+        // Generate new access token
         String newAccessToken = jwtService.generateToken(token.getUser());
 
+        // Delete old refresh token & create a new one
         refreshTokenService.deleteByUserId(token.getUser().getId());
-
         RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(token.getUser().getEmail());
 
-        return ResponseEntity.ok(Map.of(
-                "accessToken", newAccessToken,
-                "refreshToken", newRefreshToken.getToken()
-        ));
+        // Set new refresh token as HttpOnly cookie
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", newRefreshToken.getToken())
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("Strict")
+                .maxAge(14 * 24 * 60 * 60) // 14 days
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body(Map.of("accessToken", newAccessToken));
     }
 
 
