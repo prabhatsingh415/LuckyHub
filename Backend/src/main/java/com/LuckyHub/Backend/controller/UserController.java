@@ -10,8 +10,12 @@ import com.LuckyHub.Backend.model.UserModel;
 import com.LuckyHub.Backend.service.JWTService;
 import com.LuckyHub.Backend.service.RefreshTokenService;
 import com.LuckyHub.Backend.service.UserService;
+import com.LuckyHub.Backend.utils.RefreshTokenUtil;
+import com.LuckyHub.Backend.utils.UrlUtil;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -23,8 +27,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/user")
+@RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
@@ -32,33 +38,26 @@ public class UserController {
     private final RefreshTokenService refreshTokenService;
     private final JWTService jwtService;
 
-    public UserController(UserService userService, ApplicationEventPublisher publisher, RefreshTokenService refreshTokenService, JWTService jwtService) {
-        this.userService = userService;
-        this.publisher = publisher;
-        this.refreshTokenService = refreshTokenService;
-        this.jwtService = jwtService;
-    }
-
+    // -------------------- SIGNUP --------------------
     @PostMapping("/signup")
-    public ResponseEntity<?> signUp(@RequestBody  UserModel userModel,
-                                                      final HttpServletRequest request){
-       User user = userService.save(userModel);
+    public ResponseEntity<?> signUp(@RequestBody UserModel userModel, final HttpServletRequest request) {
+        log.info("Signup attempt for email: {}", userModel.getEmail());
+        User user = userService.save(userModel);
 
-        if(user == null){
-            return ResponseEntity
-                    .badRequest()
-                    .body(Map.of(
-                            "status", "failed",
-                            "message", "A user is already registered with this email!"
-                    ));
+        if (user == null) {
+            log.warn("Signup failed: Email already exists - {}", userModel.getEmail());
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "failed",
+                    "message", "A user is already registered with this email!"
+            ));
         }
 
-       //Event for sending mail
-       publisher.publishEvent(new RegistrationCompleteEvent(
+        publisher.publishEvent(new RegistrationCompleteEvent(
                 user,
                 "http://localhost:5173/verify_user"
-       ));
+        ));
 
+        log.info("Signup successful: Verification mail sent to {}", user.getEmail());
         return ResponseEntity.ok(Map.of(
                 "status", "success",
                 "message", "User registered successfully. Please verify your email.",
@@ -66,68 +65,72 @@ public class UserController {
         ));
     }
 
-    //For verifying user through E-Mail
+    // -------------------- VERIFY EMAIL --------------------
     @GetMapping("/verifyRegistration")
-    public ResponseEntity<?> verifyUser(@RequestParam("token") String token){
-      if(userService.verifyVerificationToken(token).equalsIgnoreCase("Valid")){
-          String email = jwtService.extractUserEmail(token);
-          Optional<User> user = userService.findUserByEmail(email);
+    public ResponseEntity<?> verifyUser(@RequestParam("token") String token) {
+        log.info("Verifying email with token: {}", token);
 
-          if(user.isEmpty()){
-              return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                      Map.of(
-                              "status", "success",
-                              "message", "Account activated!"
-                            )
-              );
-          }
+        if (userService.verifyVerificationToken(token).equalsIgnoreCase("Valid")) {
+            String email = jwtService.extractUserEmail(token);
+            Optional<User> user = userService.findUserByEmail(email);
 
-          UserModel userModel = userService.convertToUserModel(user.get());
-          Map<String, Object> tokens = userService.verifyLogin(userModel);
+            if (user.isEmpty()) {
+                log.warn("Verification token valid but user not found for email: {}", email);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                        "status", "success",
+                        "message", "Account activated!"
+                ));
+            }
 
-          String accessToken = tokens.getOrDefault("accessToken", "").toString();
-          String refreshToken = tokens.getOrDefault("refreshToken", "").toString();
+            UserModel userModel = userService.convertToUserModel(user.get());
+            Map<String, Object> tokens = userService.verifyLogin(userModel);
 
-          ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
-                  .httpOnly(true)
-                  .secure(true)
-                  .path("/")
-                  .maxAge(14 * 24 * 60 * 60)
-                  .sameSite("Strict")
-                  .build();
+            String accessToken = tokens.getOrDefault("accessToken", "").toString();
+            String refreshToken = tokens.getOrDefault("refreshToken", "").toString();
 
-          HttpHeaders resHeaders = new HttpHeaders();
-          resHeaders.add(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+            ResponseCookie refreshCookie = RefreshTokenUtil.buildRefreshCookie(refreshToken);
+            log.info("User verified successfully: {}", email);
 
-          return ResponseEntity.ok(Map.of(
-                  "status", "success",
-                  "message", "Account activated!",
-                  "accessToken", accessToken
-          ));
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                    .body(Map.of(
+                            "status", "success",
+                            "message", "Account activated!",
+                            "accessToken", accessToken
+                    ));
+        }
 
-      }
-      return ResponseEntity.badRequest().body(
-              Map.of(
-                      "status", "Failed",
-                      "message", "Unable to activate Account !"
-              )
-      );
+        log.error("Email verification failed for token: {}", token);
+        return ResponseEntity.badRequest().body(Map.of(
+                "status", "Failed",
+                "message", "Unable to activate account!"
+        ));
     }
 
+    // -------------------- LOGIN --------------------
     @PostMapping("/login")
-    public ResponseEntity<?>login(@RequestBody UserModel userModel) {
+    public ResponseEntity<?> login(@RequestBody UserModel userModel) {
+        log.info("Login attempt for user: {}", userModel.getEmail());
+        Map<String, Object> data = userService.verifyLogin(userModel);
 
-       Map<String, Object> data = userService.verifyLogin(userModel);
+        String refreshToken = data.getOrDefault("refreshToken", "").toString();
+        ResponseCookie refreshCookie = RefreshTokenUtil.buildRefreshCookie(refreshToken);
 
-        // Return JSON response
-        return ResponseEntity.ok().body(data);
+        log.info("Login successful for user: {}", userModel.getEmail());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body(Map.of(
+                        "status", "success",
+                        "accessToken", data.get("accessToken")
+                ));
     }
 
+    // -------------------- REFRESH TOKEN --------------------
     @PostMapping("/refresh-token")
     public ResponseEntity<?> refreshToken(HttpServletRequest request) {
-        // Extract refresh token from cookie
         String refreshTokenStr = null;
         Cookie[] cookies = request.getCookies();
+
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if ("refreshToken".equals(cookie.getName())) {
@@ -138,134 +141,118 @@ public class UserController {
         }
 
         if (refreshTokenStr == null) {
+            log.warn("Refresh token missing in cookies");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "Refresh token is missing"));
         }
 
-        // Validate the refresh token
         RefreshToken token = refreshTokenService.findByToken(refreshTokenStr)
                 .orElseThrow(() -> new RefreshTokenNotFound("Refresh token not found"));
 
         refreshTokenService.verifyExpiration(token);
-
-        // Generate new access token
         String newAccessToken = jwtService.generateToken(token.getUser());
 
-        // Delete old refresh token & create a new one
         refreshTokenService.deleteByUserId(token.getUser().getId());
         RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(token.getUser().getEmail());
 
-        // Set new refresh token as HttpOnly cookie
-        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", newRefreshToken.getToken())
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .sameSite("Strict")
-                .maxAge(14 * 24 * 60 * 60) // 14 days
-                .build();
+        ResponseCookie refreshCookie = RefreshTokenUtil.buildRefreshCookie(newRefreshToken.getToken());
+        log.info("Refresh token renewed successfully for user: {}", token.getUser().getEmail());
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                 .body(Map.of("accessToken", newAccessToken));
     }
 
-
+    // -------------------- RESEND TOKEN --------------------
     @GetMapping("/resendToken")
     public ResponseEntity<?> resendVerificationToken(@RequestParam("token") String oldToken,
-                                                     final HttpServletRequest request){
-        if(oldToken == null || oldToken.isBlank()) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(Map.of("error", "Token must not be empty"));
+                                                     final HttpServletRequest request) {
+        if (oldToken == null || oldToken.isBlank()) {
+            log.warn("Resend verification token failed: Empty token");
+            return ResponseEntity.badRequest().body(Map.of("error", "Token must not be empty"));
         }
 
-        return userService.resendVerifyToken(oldToken, request, createURL(request));
+        String baseUrl = UrlUtil.buildBaseUrl(request);
+        log.info("Resending verification token for {}", baseUrl);
+        return userService.resendVerifyToken(oldToken, request, baseUrl);
     }
 
-    @PostMapping("/resetPassword")
-    public ResponseEntity<?> resetPassword(@RequestBody PasswordModel passwordModel, HttpServletRequest request){
-
+    // -------------------- RESET PASSWORD --------------------
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody PasswordModel passwordModel, HttpServletRequest request) {
         Optional<User> user = userService.findUserByEmail(passwordModel.getEmail());
-        String url;
-        if(user.isPresent()){
-            String token = UUID.randomUUID().toString();
-            User user1 = user.get();
-            userService.createResendPasswordToken(user1, token);
-            url = userService.GeneratePasswordResetURL(createURL(request), token);
-        }else {
-            throw  new UserNotFoundException("No user found ! recheck your password");
+
+        if (user.isEmpty()) {
+            log.error("Password reset failed: User not found for {}", passwordModel.getEmail());
+            throw new UserNotFoundException("No user found! Recheck your email.");
         }
 
-        return ResponseEntity.ok()
-                .body(
-                    Map.of(
-                        "status", "success",
-                        "url", url,
-                        "message", "User is verified, now can be redirected for password reset"
-                    )
-                );
+        String token = UUID.randomUUID().toString();
+        userService.createResendPasswordToken(user.get(), token);
+
+        String baseUrl = UrlUtil.buildBaseUrl(request);
+        String url = userService.GeneratePasswordResetURL(baseUrl, token);
+
+        log.info("Password reset link generated for {}", passwordModel.getEmail());
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "url", url,
+                "message", "User is verified, redirect for password reset"
+        ));
     }
 
-    @PostMapping("/savePassword")
+    // -------------------- SAVE PASSWORD --------------------
+    @PostMapping("/reset-password-confirm")
     public ResponseEntity<?> savePassword(@RequestParam("token") String token,
-                                          @RequestBody PasswordModel passwordModel){
+                                          @RequestBody PasswordModel passwordModel) {
         String result = userService.validatePasswordToken(token);
 
-        if(!result.equalsIgnoreCase("Valid")){
-          return  ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                  Map.of(
-                          "status", "error",
-                          "message", "Invalid or expired token"
-                  )
-          );
+        if (!"Valid".equalsIgnoreCase(result)) {
+            log.warn("Invalid or expired password reset token: {}", token);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                    "status", "error",
+                    "message", "Invalid or expired token"
+            ));
         }
 
         Optional<User> user = userService.getUserByPasswordResetToken(token);
-
-        if(user.isPresent()){
+        if (user.isPresent()) {
             userService.changePassword(user.get(), passwordModel.getNewPassword());
             userService.deletePasswordToken(token);
-            return ResponseEntity.ok(
-                    Map.of(
-                            "status", "success",
-                            "message", "Password has been reset successfully."
-                    )
-            );
-        }else{
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    Map.of(
-                            "status", "error",
-                            "message", "User not found. Cannot change the password."
-                    )
-            );
+            log.info("Password changed successfully for {}", user.get().getEmail());
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", "Password has been reset successfully."
+            ));
         }
+
+        log.error("Password change failed: User not found for token {}", token);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "status", "error",
+                "message", "User not found. Cannot change the password."
+        ));
     }
 
+    // -------------------- GET CURRENT USER --------------------
     @GetMapping("/me")
     public ResponseEntity<?> getMe(HttpServletRequest request) {
         try {
             final String authHeader = request.getHeader("Authorization");
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                log.warn("Missing or invalid Authorization header");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("status", "error", "message", "Missing or invalid Authorization header"));
             }
+
             String token = authHeader.substring(7);
-
             Map<String, Object> userData = userService.getCurrentUserFromToken(token);
-
+            log.info("Fetched current user data successfully");
             return ResponseEntity.ok(Map.of("status", "success", "user", userData));
+
         } catch (Exception e) {
+            log.error("Error fetching current user: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("status", "error", "message", e.getMessage()));
         }
-    }
-
-    private String createURL(HttpServletRequest request) {
-        return "http://"+
-                request.getServerName() +
-                ":" +
-                request.getServerPort() +
-                "/" +
-                request.getContextPath();
     }
 }
