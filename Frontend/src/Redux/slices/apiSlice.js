@@ -1,11 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseQueryWithReauth } from "../baseQueryWithReAuth";
 
-console.log("API Base URL:", import.meta.env.VITE_API_BASE_URL);
 export const apiSlice = createApi({
   reducerPath: "api",
-  baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL,
-  }),
+  baseQuery: baseQueryWithReauth,
   tagTypes: ["User"],
   endpoints: (builder) => ({
     signUp: builder.mutation({
@@ -28,8 +26,27 @@ export const apiSlice = createApi({
         method: "GET",
       }),
     }),
+    refreshToken: builder.mutation({
+      query: () => ({
+        url: "/user/refresh-token",
+        method: "POST",
+        credentials: "include",
+      }),
+    }),
+    forgotPassword: builder.mutation({
+      query: (data) => ({
+        url: "/user/forgot-password",
+        method: "POST",
+        body: data,
+      }),
+    }),
   }),
 });
 
-export const { useSignUpMutation, useSignInMutation, useVerifyUserQuery } =
-  apiSlice;
+export const {
+  useSignUpMutation,
+  useSignInMutation,
+  useVerifyUserQuery,
+  useRefreshTokenMutation,
+  useForgotPasswordMutation,
+} = apiSlice;

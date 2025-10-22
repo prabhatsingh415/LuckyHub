@@ -4,6 +4,7 @@ import Form from "../components/Form";
 import { useForm } from "react-hook-form";
 import { Lock, Mail, User } from "lucide-react";
 import { useSignUpMutation } from "../Redux/slices/apiSlice";
+import Loader from "./Loader";
 
 function SignUp() {
   const theme = localStorage.getItem("theme");
@@ -95,7 +96,7 @@ function SignUp() {
 
   return (
     <div className="w-full flex flex-col justify-center items-center dark:text-white">
-      {isLoading && <div className="text-[var(--orange)]">Loading...</div>}
+      {isLoading && <Loader />}
       <div className="w-full flex flex-col justify-center items-center">
         <img
           src={theme === "dark" ? logoDarkSvg : logoLightSvg}
