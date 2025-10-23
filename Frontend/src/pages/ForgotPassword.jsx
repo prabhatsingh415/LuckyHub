@@ -28,7 +28,7 @@ function ForgotPassword() {
       placeholder: "Enter your email",
       register: register("email", {
         required: "Email is required",
-        pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/,
+        pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
         message: "Invalid email address",
       }),
     },
