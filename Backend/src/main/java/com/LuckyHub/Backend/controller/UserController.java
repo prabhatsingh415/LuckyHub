@@ -2,11 +2,13 @@ package com.LuckyHub.Backend.controller;
 
 import com.LuckyHub.Backend.entity.RefreshToken;
 import com.LuckyHub.Backend.entity.User;
+import com.LuckyHub.Backend.entity.VerificationToken;
 import com.LuckyHub.Backend.event.RegistrationCompleteEvent;
 import com.LuckyHub.Backend.exception.RefreshTokenNotFound;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
 import com.LuckyHub.Backend.model.PasswordModel;
 import com.LuckyHub.Backend.model.UserModel;
+import com.LuckyHub.Backend.repository.VerificationTokenRepository;
 import com.LuckyHub.Backend.service.JWTService;
 import com.LuckyHub.Backend.service.RefreshTokenService;
 import com.LuckyHub.Backend.service.UserService;
@@ -37,6 +39,7 @@ public class UserController {
     private final ApplicationEventPublisher publisher;
     private final RefreshTokenService refreshTokenService;
     private final JWTService jwtService;
+    private final VerificationTokenRepository verificationTokenRepository;
 
     // -------------------- SIGNUP --------------------
     @PostMapping("/signup")
@@ -70,41 +73,50 @@ public class UserController {
     public ResponseEntity<?> verifyUser(@RequestParam("token") String token) {
         log.info("Verifying email with token: {}", token);
 
-        if (userService.verifyVerificationToken(token).equalsIgnoreCase("Valid")) {
-            String email = jwtService.extractUserEmail(token);
-            Optional<User> user = userService.findUserByEmail(email);
+        VerificationToken verificationToken = verificationTokenRepository.findByToken(token);
 
-            if (user.isEmpty()) {
-                log.warn("Verification token valid but user not found for email: {}", email);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
-                        "status", "success",
-                        "message", "Account activated!"
-                ));
-            }
-
-            UserModel userModel = userService.convertToUserModel(user.get());
-            Map<String, Object> tokens = userService.verifyLogin(userModel);
-
-            String accessToken = tokens.getOrDefault("accessToken", "").toString();
-            String refreshToken = tokens.getOrDefault("refreshToken", "").toString();
-
-            ResponseCookie refreshCookie = RefreshTokenUtil.buildRefreshCookie(refreshToken);
-            log.info("User verified successfully: {}", email);
-
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                    .body(Map.of(
-                            "status", "success",
-                            "message", "Account activated!",
-                            "accessToken", accessToken
-                    ));
+        if (verificationToken == null) {
+            log.error("Invalid verification token: {}", token);
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "Failed",
+                    "message", "Invalid verification link!"
+            ));
         }
 
-        log.error("Email verification failed for token: {}", token);
-        return ResponseEntity.badRequest().body(Map.of(
-                "status", "Failed",
-                "message", "Unable to activate account!"
-        ));
+        String result = userService.verifyVerificationToken(token);
+        if (!result.equalsIgnoreCase("Valid")) {
+            log.warn("Verification token expired or invalid: {}", token);
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "Failed",
+                    "message", result
+            ));
+        }
+
+        User user = verificationToken.getUser();
+        if (user == null) {
+            log.error("Verification token valid but user not found!");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "status", "Failed",
+                    "message", "User not found!"
+            ));
+        }
+
+        UserModel userModel = userService.convertToUserModel(user);
+        Map<String, Object> tokens = userService.verifyLogin(userModel);
+
+        String accessToken = tokens.getOrDefault("accessToken", "").toString();
+        String refreshToken = tokens.getOrDefault("refreshToken", "").toString();
+
+        ResponseCookie refreshCookie = RefreshTokenUtil.buildRefreshCookie(refreshToken);
+        log.info("User verified successfully: {}", user.getEmail());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body(Map.of(
+                        "status", "success",
+                        "message", "Account activated!",
+                        "accessToken", accessToken
+                ));
     }
 
     // -------------------- LOGIN --------------------
@@ -177,12 +189,12 @@ public class UserController {
         return userService.resendVerifyToken(oldToken, request, baseUrl);
     }
 
-    // -------------------- RESET PASSWORD --------------------
+    // -------------------- FORGOT PASSWORD --------------------
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody PasswordModel passwordModel, HttpServletRequest request) {
         Optional<User> user = userService.findUserByEmail(passwordModel.getEmail());
 
-        if (user.isEmpty()) {
+        if(user.isEmpty()) {
             log.error("Password reset failed: User not found for {}", passwordModel.getEmail());
             throw new UserNotFoundException("No user found! Recheck your email.");
         }
