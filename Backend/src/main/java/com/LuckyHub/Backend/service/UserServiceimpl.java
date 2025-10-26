@@ -197,15 +197,22 @@ public class UserServiceimpl implements UserService{
     }
 
     @Override
-    public void createResendPasswordToken(User user, String token) {
+    public void createResetPasswordToken(User user, String token) {
+        // Delete old token if exists
+        PasswordToken existingToken = passwordTokenRepository.findByUser(user);
+        if (existingToken != null) {
+            passwordTokenRepository.delete(existingToken);
+        }
+        //Save token
         PasswordToken passwordToken = new PasswordToken(user, token);
         passwordTokenRepository.save(passwordToken);
     }
 
+
     @Override
     public String GeneratePasswordResetURL(String url, String token) {
         return url
-                + "/savePassword?token="
+                + "/reset-password?token="
                 + token;
     }
 
