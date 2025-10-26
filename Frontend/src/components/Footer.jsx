@@ -8,7 +8,7 @@ import { XIcon, LinkedInIcon } from "..";
 
 function Footer() {
   const theme = useSelector((state) => state.theme.mode);
-  const naviate = useNavigate();
+  const navigate = useNavigate();
 
   return (
     <footer className="flex flex-col md:grid grid-cols-3 grid-rows-2 justify-center items-center  border-t-2  border-t-[#f7f7f7] dark:border-t-[#0f0f0f]">
@@ -27,7 +27,7 @@ function Footer() {
           duration={500}
           offset={-70}
           className="hover:text-[var(--orange)] cursor-pointer text-sm"
-          onClick={() => naviate("Terms-of-Service")}
+          onClick={() => navigate("Terms-of-Service")}
         >
           Privacy Policy
         </ScrollLink>
@@ -37,7 +37,7 @@ function Footer() {
           duration={500}
           offset={-70}
           className="hover:text-[var(--orange)] cursor-pointer text-sm"
-          onClick={() => naviate("/Privacy-Policy")}
+          onClick={() => navigate("/Privacy-Policy")}
         >
           Terms of Service
         </ScrollLink>
@@ -47,7 +47,7 @@ function Footer() {
           duration={500}
           offset={-70}
           className="hover:text-[var(--orange)] cursor-pointer text-sm"
-          onClick={() => naviate("/Support")}
+          onClick={() => navigate("/Support")}
         >
           Support
         </ScrollLink>

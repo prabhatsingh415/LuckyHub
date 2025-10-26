@@ -39,9 +39,16 @@ function ForgotPassword() {
   const navigate = useNavigate();
   const [forgotPasswordData, { isLoading, isSuccess, error }] =
     useForgotPasswordMutation();
-  const handleForgotPassword = (data) => {
-    forgotPasswordData(data);
+  const handleForgotPassword = async (data) => {
+    console.log("Form submitted with:", data);
+    try {
+      const res = await forgotPasswordData(data).unwrap();
+      console.log("Success:", res);
+    } catch (err) {
+      console.error("Error:", err);
+    }
   };
+
   return (
     <div className="w-full flex flex-col justify-center items-center mt-36 dark:text-white">
       <div className="w-full flex flex-col justify-center items-center">
