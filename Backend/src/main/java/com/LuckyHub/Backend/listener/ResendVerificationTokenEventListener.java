@@ -7,22 +7,20 @@ import com.LuckyHub.Backend.exception.UserEmailNotFoundException;
 import com.LuckyHub.Backend.repository.VerificationTokenRepository;
 import com.LuckyHub.Backend.service.EmailService;
 import com.LuckyHub.Backend.service.UserService;
+import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
 @Component
+@Async
+@AllArgsConstructor
 public class ResendVerificationTokenEventListener implements ApplicationListener<ResendVerificationTokenEvent> {
     private final UserService userService;
     private final EmailService emailService;
     private final VerificationTokenRepository verificationTokenRepository;
-
-    public ResendVerificationTokenEventListener(UserService userService, EmailService emailService, VerificationTokenRepository verificationTokenRepository) {
-        this.userService = userService;
-        this.emailService = emailService;
-        this.verificationTokenRepository = verificationTokenRepository;
-    }
 
     @Override
     public void onApplicationEvent(ResendVerificationTokenEvent event) {

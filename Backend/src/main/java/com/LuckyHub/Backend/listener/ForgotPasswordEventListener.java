@@ -7,11 +7,13 @@ import com.LuckyHub.Backend.exception.UserEmailNotFoundException;
 import com.LuckyHub.Backend.service.EmailService;
 import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Component
-public class ForgotPasswordEventListner implements ApplicationListener<ForgotPasswordEvent> {
+@Async
+public class ForgotPasswordEventListener implements ApplicationListener<ForgotPasswordEvent> {
 
     private final EmailService emailService;
 
@@ -36,7 +38,7 @@ public class ForgotPasswordEventListner implements ApplicationListener<ForgotPas
         try {
             emailService.sendEmail(user.getEmail(), "LuckyHub | Reset Password", body);
         } catch (Exception e) {
-            throw new EmailSendingFailedException("Failed to send registration email to " + user.getEmail(), e);
+            throw new EmailSendingFailedException("Failed to send password reset email to " + user.getEmail(), e);
         }
     }
 }

@@ -3,6 +3,7 @@ package com.LuckyHub.Backend.controller;
 import com.LuckyHub.Backend.entity.RefreshToken;
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.entity.VerificationToken;
+import com.LuckyHub.Backend.event.ForgotPasswordEvent;
 import com.LuckyHub.Backend.event.RegistrationCompleteEvent;
 import com.LuckyHub.Backend.exception.RefreshTokenNotFound;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
@@ -71,44 +72,27 @@ public class UserController {
     // -------------------- VERIFY EMAIL --------------------
     @GetMapping("/verifyRegistration")
     public ResponseEntity<?> verifyUser(@RequestParam("token") String token) {
-        log.info("Verifying email with token: {}", token);
 
         VerificationToken verificationToken = verificationTokenRepository.findByToken(token);
-
-        if (verificationToken == null) {
-            log.error("Invalid verification token: {}", token);
+        if (verificationToken == null)
             return ResponseEntity.badRequest().body(Map.of(
                     "status", "Failed",
                     "message", "Invalid verification link!"
             ));
-        }
 
         String result = userService.verifyVerificationToken(token);
-        if (!result.equalsIgnoreCase("Valid")) {
-            log.warn("Verification token expired or invalid: {}", token);
+        if (!result.equalsIgnoreCase("Valid"))
             return ResponseEntity.badRequest().body(Map.of(
                     "status", "Failed",
                     "message", result
             ));
-        }
 
         User user = verificationToken.getUser();
-        if (user == null) {
-            log.error("Verification token valid but user not found!");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
-                    "status", "Failed",
-                    "message", "User not found!"
-            ));
-        }
 
-        UserModel userModel = userService.convertToUserModel(user);
-        Map<String, Object> tokens = userService.verifyLogin(userModel);
-
-        String accessToken = tokens.getOrDefault("accessToken", "").toString();
-        String refreshToken = tokens.getOrDefault("refreshToken", "").toString();
-
-        ResponseCookie refreshCookie = RefreshTokenUtil.buildRefreshCookie(refreshToken);
-        log.info("User verified successfully: {}", user.getEmail());
+        // Generate JWT and Refresh Token
+        String accessToken = jwtService.generateToken(user);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
+        ResponseCookie refreshCookie = RefreshTokenUtil.buildRefreshCookie(refreshToken.getToken());
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
@@ -118,6 +102,7 @@ public class UserController {
                         "accessToken", accessToken
                 ));
     }
+
 
     // -------------------- LOGIN --------------------
     @PostMapping("/login")
@@ -200,16 +185,22 @@ public class UserController {
         }
 
         String token = UUID.randomUUID().toString();
-        userService.createResendPasswordToken(user.get(), token);
+        userService.createResetPasswordToken(user.get(), token);
 
-        String baseUrl = UrlUtil.buildBaseUrl(request);
+        String baseUrl = System.getenv("FRONTEND_BASE_URL");
         String url = userService.GeneratePasswordResetURL(baseUrl, token);
+
+        log.info("Forgot Password event called!");
+        //Sending Email through Event !
+        publisher.publishEvent(new ForgotPasswordEvent(
+                user.get(),
+                url
+        ));
 
         log.info("Password reset link generated for {}", passwordModel.getEmail());
         return ResponseEntity.ok(Map.of(
                 "status", "success",
-                "url", url,
-                "message", "User is verified, redirect for password reset"
+                "message", "Reset password link has been sent to the user's email!"
         ));
     }
 

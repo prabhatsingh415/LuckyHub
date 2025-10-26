@@ -6,21 +6,20 @@ import com.LuckyHub.Backend.exception.UserEmailNotFoundException;
 import com.LuckyHub.Backend.exception.EmailSendingFailedException;
 import com.LuckyHub.Backend.service.EmailService;
 import com.LuckyHub.Backend.service.UserService;
+import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
 @Component
+@Async
+@AllArgsConstructor
 public class RegistrationCompleteEventListener implements ApplicationListener<RegistrationCompleteEvent> {
 
     private final UserService userService;
     private final EmailService emailService;
-
-    public RegistrationCompleteEventListener(UserService userService, EmailService emailService) {
-        this.userService = userService;
-        this.emailService = emailService;
-    }
 
     @Override
     public void onApplicationEvent(RegistrationCompleteEvent event) {

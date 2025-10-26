@@ -6,10 +6,9 @@ import lombok.Setter;
 import org.springframework.context.ApplicationEvent;
 
 @Getter
-@Setter
 public class ResendVerificationTokenEvent extends ApplicationEvent {
-    private User user;
-    private String url;
+    private final User user;
+    private final String url;
     public ResendVerificationTokenEvent(User user, String url) {
         super(user);
         this.user = user;
