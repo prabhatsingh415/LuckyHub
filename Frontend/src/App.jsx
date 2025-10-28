@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
@@ -15,28 +15,34 @@ import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   const theme = useSelector((state) => state.theme.mode);
-  const isSignIn = localStorage.getItem("isSignIn") === "true";
   const loader = useSelector((state) => state.loader.showLoader);
+  const [isSignIn, setIsSignIn] = useState(
+    localStorage.getItem("isSignIn") === "true"
+  );
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
 
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setIsSignIn(localStorage.getItem("isSignIn") === "true");
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
   const router = createBrowserRouter([
     { path: "/", element: isSignIn ? <Home /> : <LandingPage /> },
-    { path: "/signup", element: <SignUp /> },
+    { path: "/signup", element: isSignIn ? <Home /> : <SignUp /> },
     { path: "/signin", element: <SignIn /> },
-    { path: "/home", element: <Home /> },
+    { path: "/home", element: isSignIn ? <Home /> : <LandingPage /> },
     { path: "/terms-of-condition", element: <TermsOfService /> },
     { path: "/privacy-policy", element: <PrivacyPolicy /> },
     { path: "/verify_user", element: <VerifyUserPage /> },
     { path: "/signIn/forgot-password", element: <ForgotPassword /> },
     { path: "/reset-password", element: <ResetPassword /> },
   ]);
-
-  const accessToken = useSelector((state) => state.auth.accessToken);
-
-  console.log("Access Token:", accessToken);
 
   return (
     <div className="flex flex-col min-h-screen dark:bg-[var(--black)]">
