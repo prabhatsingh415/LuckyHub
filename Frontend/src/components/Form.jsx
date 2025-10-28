@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import Input from "./Input";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import InfoModal from "../pages/InfoModal";
 
 export default function Form({
   formData = [],
@@ -20,19 +21,19 @@ export default function Form({
   const navigate = useNavigate();
   const [visiblePasswords, setVisiblePasswords] = useState({});
   const [isChecked, setIsChecked] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const formRef = useRef(null);
 
-  // Prevent cursor reset & unwanted focusing
   const handleFormSubmit = (e) => {
     e.preventDefault();
 
-    // If terms are required and unchecked, stop submission
     if (showCheckMark && !isChecked) {
-      alert("Please agree to the Terms and Privacy Policy before continuing.");
-      return;
+      if (showCheckMark && !isChecked) {
+        setModalOpen(true);
+        return;
+      }
     }
 
-    // Call parent onSubmit safely
     if (onSubmit) onSubmit(e);
   };
 
@@ -249,6 +250,15 @@ export default function Form({
           </button>
         </p>
       )}
+
+      <InfoModal
+        isOpen={modalOpen}
+        type="info"
+        title="Action Required ⚠️"
+        message="Please agree to the Terms and Privacy Policy before continuing."
+        okText="Got it"
+        onOk={() => setModalOpen(false)}
+      />
     </form>
   );
 }

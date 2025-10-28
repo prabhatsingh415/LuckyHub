@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { Lock, Mail, User } from "lucide-react";
 import { useSignUpMutation } from "../Redux/slices/apiSlice";
 import Loader from "./Loader";
+import InfoModal from "./InfoModal";
 
 function SignUp() {
   const theme = localStorage.getItem("theme");
@@ -13,6 +14,7 @@ function SignUp() {
     handleSubmit,
     formState: { errors },
   } = useForm();
+
   const formData = [
     {
       label: "First Name",
@@ -88,7 +90,8 @@ function SignUp() {
   const subHeading = "Start your journey as a content creator";
   const subHeadingClassName = "text-sm text-[#a1a1a1] mb-8";
 
-  const [signUpData, { isLoading, isSuccess, error }] = useSignUpMutation();
+  const [signUpData, { isLoading, isSuccess, isError, error, reset }] =
+    useSignUpMutation();
 
   const handleSignup = (data) => {
     signUpData(data);
@@ -96,7 +99,35 @@ function SignUp() {
 
   return (
     <div className="w-full flex flex-col justify-center items-center dark:text-white">
+      {/* Loader */}
       {isLoading && <Loader />}
+
+      {/* Success Modal */}
+      {isSuccess && (
+        <InfoModal
+          isOpen={true}
+          type="success"
+          title="Account Created 🎉"
+          message="Verification email has been sent. Please check your inbox!"
+          okText="Go to Gmail"
+          redirectUrl="https://mail.google.com/"
+        />
+      )}
+
+      {/* Error Modal */}
+      {isError && (
+        <InfoModal
+          isOpen={true}
+          type="error"
+          title="Signup Failed"
+          message={
+            error?.data?.message || "Something went wrong, please try again."
+          }
+          okText="Try Again"
+          onOk={() => reset()}
+        />
+      )}
+
       <div className="w-full flex flex-col justify-center items-center">
         <img
           src={theme === "dark" ? logoDarkSvg : logoLightSvg}
