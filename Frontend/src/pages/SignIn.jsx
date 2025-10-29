@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { Lock, Mail } from "lucide-react";
 import { useSelector } from "react-redux";
 
-function SignUp() {
+function SignIn() {
   const theme = useSelector((state) => state.theme.mode);
   const {
     register,
@@ -75,4 +75,4 @@ function SignUp() {
   );
 }
 
-export default SignUp;
+export default SignIn;
