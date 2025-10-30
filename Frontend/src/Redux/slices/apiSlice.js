@@ -40,6 +40,19 @@ export const apiSlice = createApi({
         body: data,
       }),
     }),
+    savePassword: builder.mutation({
+      query: ({ password, token }) => ({
+        url: `/user/reset-password-confirm?token=${token}`,
+        method: "POST",
+        body: { newPassword: password },
+      }),
+    }),
+    resendVerification: builder.query({
+      query: (token) => ({
+        url: `/user/resendToken?token=${token}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -49,4 +62,7 @@ export const {
   useVerifyUserQuery,
   useRefreshTokenMutation,
   useForgotPasswordMutation,
+  useSavePasswordMutation,
+  useResendVerificationQuery,
+  useLazyResendVerificationQuery,
 } = apiSlice;
