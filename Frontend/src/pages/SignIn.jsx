@@ -1,4 +1,4 @@
-import { logoDarkSvg, logoLightSvg } from "..";
+import { logoDark, logoLight } from "..";
 import Form from "../components/Form";
 import { useForm } from "react-hook-form";
 import { Lock, Mail } from "lucide-react";
@@ -53,18 +53,18 @@ function SignIn() {
     <div className="w-full flex flex-col justify-center items-center dark:text-white">
       <div className="w-full flex flex-col justify-center items-center">
         <img
-          src={theme === "dark" ? logoDarkSvg : logoLightSvg}
-          className="h-16 w-32"
+          src={theme === "dark" ? logoDark : logoLight}
+          className="h-24 w-auto my-4"
         />
         <h1 className="text-md text-[#a1a1a1]">Join the creator community</h1>
       </div>
 
-      <div className="w-full md:w-md md:px-4 mt-4 border-2 flex items-center justify-center border-[#111111] rounded-xl">
+      <div className="w-full md:w-md md:px-4 mt-4 flex items-center justify-center rounded-xl">
         <Form
           formData={formData}
           headingData={{ heading, headingClassName }}
           errors={errors}
-          className="bg-[#f2f2f5] dark:bg-[#121212] w-full pl-10 p-2 border border-[#171717] rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 "
+          className="bg-[#f2f2f5] dark:bg-[#121212] w-full mx-6 my-6 md:my-0 pl-4 p-2 border border-[#171717] rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 "
           submitBtnText="Create Account"
           btnClassName="w-full bg-[var(--orange)] rounded-lg p-2  text-black dark:text-white hover:scale-105 transition-transform "
           isContainsGoogleSignIn={true}

@@ -1,5 +1,5 @@
 import React from "react";
-import { logoDarkSvg, logoLightSvg } from "..";
+import { logoDark, logoLight } from "..";
 import { useSelector } from "react-redux";
 import { Link as ScrollLink } from "react-scroll";
 import { useNavigate } from "react-router-dom";
@@ -12,11 +12,11 @@ function Footer() {
 
   return (
     <footer className="flex flex-col md:grid grid-cols-3 grid-rows-2 justify-center items-center  border-t-2  border-t-[#f7f7f7] dark:border-t-[#0f0f0f]">
-      <div className="flex items-center mr-2 md:mr-8">
+      <div className="flex items-center ml-4 my-4 md:ml-12 mr-2 md:mr-8">
         <img
-          src={theme === "dark" ? logoDarkSvg : logoLightSvg}
+          src={theme === "dark" ? logoDark : logoLight}
           alt="Logo"
-          className="h-32 w-auto md:h-32 lg:h-28 md:w-auto"
+          className="h-16 md:h-12 lg:h-16 md:w-auto"
         />
       </div>
 

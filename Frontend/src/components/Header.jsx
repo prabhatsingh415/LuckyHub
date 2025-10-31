@@ -1,5 +1,5 @@
 import { useSelector, useDispatch } from "react-redux";
-import { logoDarkSvg, logoLightSvg } from "..";
+import { logoDarkSvg, logoLightSvg, logoDark, logoLight } from "..";
 import { Link as ScrollLink } from "react-scroll";
 import { Sun, Moon } from "lucide-react";
 import { toggleTheme } from "../Redux/slices/themeSlice";
@@ -12,11 +12,11 @@ function Header() {
 
   return (
     <header className="w-full flex items-center justify-between border-b-2 border-b-[#f7f7f7] dark:border-b-[#0f0f0f] px-4 md:px-8">
-      <div className="flex items-center mr-2 md:mr-8">
+      <div className="flex items-center mr-2 md:mr-[14rem] ">
         <img
-          src={theme === "dark" ? logoDarkSvg : logoLightSvg}
+          src={theme === "dark" ? logoDark : logoLight}
           alt="Logo"
-          className="h-24 w-32 md:h-32 lg:h-28 md:w-auto"
+          className="h-8 md:h-12 lg:h-16 md:w-auto"
         />
       </div>
 
@@ -67,7 +67,7 @@ function Header() {
 
         <button
           onClick={() => navigate("/signUp")}
-          className="h-8 w-24 ml-2 md:h-12 md:w-32 lg:h-16 bg-[var(--orange)] text-xs md:text-lg md:py-2 rounded-xl font-bold text-black dark:text-white hover:scale-105 transition-transform cursor-pointer"
+          className="h-6 w-24 ml-2 md:h-8 md:pb-8 md:w-32 lg:pb-2 lg:h-12 bg-[var(--orange)] text-xs md:text-lg md:py-2 rounded-lg md:rounded-xl font-bold text-black dark:text-white hover:scale-90 hover:bg-orange-800 transition-transform cursor-pointer"
         >
           Get Started
         </button>
