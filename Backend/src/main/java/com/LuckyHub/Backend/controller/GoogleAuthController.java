@@ -81,7 +81,7 @@ public class GoogleAuthController {
 
                 HttpHeaders resHeaders = new HttpHeaders();
                 resHeaders.set(HttpHeaders.SET_COOKIE, refreshCookie.toString());
-                resHeaders.setLocation(URI.create("http://localhost:5173/home"));
+                resHeaders.setLocation(URI.create("http://localhost:5173/auth-success"));
                 return new ResponseEntity<>(resHeaders, HttpStatus.FOUND);
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

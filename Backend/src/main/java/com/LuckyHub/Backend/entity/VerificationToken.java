@@ -1,5 +1,6 @@
 package com.LuckyHub.Backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,6 +26,7 @@ public class VerificationToken {
              name = "userID",
              nullable = false
      )
+     @JsonIgnore
      private User user;
 
     public VerificationToken(User user, String token) {

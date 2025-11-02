@@ -22,7 +22,7 @@ public interface UserService {
 
     Optional<User> findUserByEmail(@Email(message = "Invalid email address") @NotBlank(message = "Email cannot be empty!") String email);
 
-    void createResendPasswordToken(User user, String token);
+    void createResetPasswordToken(User user, String token);
 
     String GeneratePasswordResetURL(String url, String token);
 
