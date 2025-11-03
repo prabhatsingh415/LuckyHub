@@ -1,5 +1,5 @@
 import { useSelector, useDispatch } from "react-redux";
-import { logoDarkSvg, logoLightSvg, logoDark, logoLight } from "..";
+import { logoDark, logoLight } from "..";
 import { Link as ScrollLink } from "react-scroll";
 import { Sun, Moon } from "lucide-react";
 import { toggleTheme } from "../Redux/slices/themeSlice";

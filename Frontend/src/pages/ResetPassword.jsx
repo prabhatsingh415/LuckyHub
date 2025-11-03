@@ -1,7 +1,7 @@
 import { useSearchParams } from "react-router-dom";
 import { useSavePasswordMutation } from "../Redux/slices/apiSlice";
 import { useForm } from "react-hook-form";
-import { logoDarkSvg, logoLightSvg } from "..";
+import { logoDark, logoLight } from "..";
 import { Lock } from "lucide-react";
 import Loader from "./Loader";
 import Form from "../components/Form";
@@ -80,7 +80,7 @@ function ResetPassword() {
       {isLoading && <Loader />}
       <div className="w-full flex flex-col justify-center items-center">
         <img
-          src={theme === "dark" ? logoDarkSvg : logoLightSvg}
+          src={theme === "dark" ? logoDark : logoLight}
           className="h-16 w-32"
         />
         <h1 className="text-md text-[#a1a1a1]">Join the creator community</h1>

@@ -1,9 +1,8 @@
-import { logoDarkSvg, logoLightSvg } from "..";
+import { logoDark, logoLight } from "..";
 import Form from "../components/Form";
 import { useForm } from "react-hook-form";
 import { useSelector } from "react-redux";
 import { ArrowLeft, Mail } from "lucide-react";
-import Button from "../components/Button";
 import { useNavigate } from "react-router-dom";
 import { useForgotPasswordMutation } from "../Redux/slices/apiSlice";
 
@@ -53,7 +52,7 @@ function ForgotPassword() {
     <div className="w-full flex flex-col justify-center items-center mt-36 dark:text-white">
       <div className="w-full flex flex-col justify-center items-center">
         <img
-          src={theme === "dark" ? logoDarkSvg : logoLightSvg}
+          src={theme === "dark" ? logoDark : logoLight}
           className="h-16 w-32"
         />
         <h1 className="text-md text-[#a1a1a1]">Reset your password</h1>

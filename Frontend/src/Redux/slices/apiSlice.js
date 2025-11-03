@@ -12,6 +12,7 @@ export const apiSlice = createApi({
         method: "POST",
         body: data,
       }),
+      extraOptions: { refetchOnMountOrArgChange: true },
     }),
     signIn: builder.mutation({
       query: (data) => ({

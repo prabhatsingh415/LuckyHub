@@ -34,7 +34,11 @@ export default function Form({
       }
     }
 
-    if (onSubmit) onSubmit(e);
+    if (onSubmit) {
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+      onSubmit(data);
+    }
   };
 
   const togglePassword = (id) => {

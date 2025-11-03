@@ -6,6 +6,7 @@ import { Lock, Mail, User } from "lucide-react";
 import { useSignUpMutation } from "../Redux/slices/apiSlice";
 import Loader from "./Loader";
 import InfoModal from "./InfoModal";
+import { useEffect } from "react";
 
 function SignUp() {
   const theme = useSelector((state) => state.theme.mode);
@@ -90,19 +91,28 @@ function SignUp() {
   const subHeading = "Start your journey as a content creator";
   const subHeadingClassName = "text-sm text-[#a1a1a1] mb-8";
 
-  const [signUpData, { isLoading, isSuccess, isError, error, reset }] =
+  const [signUpData, { data, isLoading, isSuccess, isError, error, reset }] =
     useSignUpMutation();
 
-  const handleSignup = (data) => {
-    signUpData(data);
+  const handleSignup = (formValues) => {
+    signUpData(formValues);
   };
+
+  useEffect(() => {
+    console.table({
+      isLoading: isLoading,
+      isSuccess: isSuccess,
+      isError: isError,
+      "error.status": error?.status,
+      "data?": !!data,
+    });
+  }, [isLoading, isSuccess, isError, error, data]);
 
   return (
     <div className="w-full flex flex-col  md:mt-32 md:ml-5 lg:mt-0 lg:ml-0 justify-center items-center dark:text-white">
       {/* Loader */}
       {isLoading && <Loader />}
 
-      {/* Success Modal */}
       {isSuccess && (
         <InfoModal
           isOpen={true}
@@ -111,10 +121,10 @@ function SignUp() {
           message="Verification email has been sent. Please check your inbox!"
           okText="Go to Gmail"
           redirectUrl="https://mail.google.com/"
+          onOk={() => reset()}
         />
       )}
 
-      {/* Error Modal */}
       {isError && (
         <InfoModal
           isOpen={true}
@@ -127,7 +137,6 @@ function SignUp() {
           onOk={() => reset()}
         />
       )}
-
       <div className="w-full flex flex-col justify-center items-center">
         <img
           src={theme === "dark" ? logoDark : logoLight}

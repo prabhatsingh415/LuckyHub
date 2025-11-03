@@ -1,4 +1,3 @@
-import React from "react";
 import { logoDark, logoLight } from "..";
 import { useSelector } from "react-redux";
 import { Link as ScrollLink } from "react-scroll";
