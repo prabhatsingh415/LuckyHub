@@ -4,6 +4,7 @@ import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.exception.InvalidAmountForAnyPlanException;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
+import com.LuckyHub.Backend.service.JWTService;
 import com.LuckyHub.Backend.service.PaymentService;
 import com.LuckyHub.Backend.service.SubscriptionService;
 import com.LuckyHub.Backend.service.UserService;
@@ -33,12 +34,13 @@ public class SubscriptionController {
     private final SubscriptionService subscriptionService;
     private final UserService userService;
     private final PaymentService paymentService;
+    private  final JWTService jwtService;
 
-
-    public SubscriptionController(SubscriptionService subscriptionService, UserService userService, PaymentService paymentService) {
+    public SubscriptionController(SubscriptionService subscriptionService, UserService userService, PaymentService paymentService, JWTService jwtService) {
         this.subscriptionService = subscriptionService;
         this.userService = userService;
         this.paymentService = paymentService;
+        this.jwtService = jwtService;
     }
 
     @Value("${Razorpay_key_Id}")
@@ -155,9 +157,8 @@ public class SubscriptionController {
         }
         String token = authHeader.substring(7);
 
-        Map<String, Object> userData = userService.getCurrentUserFromToken(token);
-
-        Long ID = userService.findUserIdByEmail(userData.get("email").toString());
+        String email = jwtService.extractUserEmail(token);
+        Long ID = userService.findUserIdByEmail(email);
 
         return ID;
     }

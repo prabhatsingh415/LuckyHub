@@ -56,16 +56,18 @@ public class UserController {
             ));
         }
 
+        String token = UUID.randomUUID().toString(); // generating token;
         publisher.publishEvent(new RegistrationCompleteEvent(
                 user,
-                "http://localhost:5173/verify_user"
+                "http://localhost:5173/verify_user",
+                token
         ));
 
         log.info("Signup successful: Verification mail sent to {}", user.getEmail());
         return ResponseEntity.ok(Map.of(
                 "status", "success",
                 "message", "User registered successfully. Please verify your email.",
-                "user", user
+                "token", token
         ));
     }
 
@@ -171,7 +173,7 @@ public class UserController {
 
         String baseUrl = UrlUtil.buildBaseUrl(request);
         log.info("Resending verification token for {}", baseUrl);
-        return userService.resendVerifyToken(oldToken, request, baseUrl);
+        return userService.resendVerifyToken(oldToken, request, "http://localhost:5173/verify_user");
     }
 
     // -------------------- FORGOT PASSWORD --------------------
@@ -248,8 +250,10 @@ public class UserController {
             }
 
             String token = authHeader.substring(7);
-            Map<String, Object> userData = userService.getCurrentUserFromToken(token);
+            String email = jwtService.extractUserEmail(token);
+            Map<String, Object> userData = userService.getCurrentUserFromToken(token, email);
             log.info("Fetched current user data successfully");
+
             return ResponseEntity.ok(Map.of("status", "success", "user", userData));
 
         } catch (Exception e) {

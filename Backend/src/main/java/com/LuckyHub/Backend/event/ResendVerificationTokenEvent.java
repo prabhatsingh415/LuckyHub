@@ -9,9 +9,11 @@ import org.springframework.context.ApplicationEvent;
 public class ResendVerificationTokenEvent extends ApplicationEvent {
     private final User user;
     private final String url;
-    public ResendVerificationTokenEvent(User user, String url) {
+    private final String token;
+    public ResendVerificationTokenEvent(User user, String url, String token) {
         super(user);
         this.user = user;
         this.url = url;
+        this.token = token;
     }
 }

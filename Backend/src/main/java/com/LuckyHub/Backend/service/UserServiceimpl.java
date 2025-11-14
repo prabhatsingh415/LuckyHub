@@ -9,7 +9,11 @@ import com.LuckyHub.Backend.model.UserModel;
 import com.LuckyHub.Backend.repository.PasswordTokenRepository;
 import com.LuckyHub.Backend.repository.UserRepository;
 import com.LuckyHub.Backend.repository.VerificationTokenRepository;
+import com.LuckyHub.Backend.utils.VerificationTokenUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,7 +25,8 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 @Service
-
+@AllArgsConstructor
+@Slf4j
 public class UserServiceimpl implements UserService{
 
     private final VerificationTokenRepository verificationTokenRepository;
@@ -33,18 +38,6 @@ public class UserServiceimpl implements UserService{
     private final PasswordTokenRepository passwordTokenRepository;
     private final RefreshTokenService refreshTokenService;
     private final PaymentService paymentService;
-
-    public UserServiceimpl(VerificationTokenRepository verificationTokenRepository, UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, AuthenticationManager authenticationManager, JWTService jwtService, ApplicationEventPublisher publisher, PasswordTokenRepository passwordTokenRepository, RefreshTokenService refreshTokenService, PaymentService paymentService) {
-        this.verificationTokenRepository = verificationTokenRepository;
-        this.userRepository = userRepository;
-        this.bCryptPasswordEncoder = bCryptPasswordEncoder;
-        this.authenticationManager = authenticationManager;
-        this.jwtService = jwtService;
-        this.publisher = publisher;
-        this.passwordTokenRepository = passwordTokenRepository;
-        this.refreshTokenService = refreshTokenService;
-        this.paymentService = paymentService;
-    }
 
     public User save(UserModel userModel){
          Optional<User> optUser = userRepository.findByEmail(userModel.getEmail());
@@ -120,23 +113,14 @@ public class UserServiceimpl implements UserService{
         if (existingToken != null) {
             // Update existing token and expiration time
             existingToken.setToken(token);
-            existingToken.setExpirationTime(calculateExpirationTime());
+            existingToken.setExpirationTime(VerificationTokenUtil.calculateExpirationTime());
             verificationTokenRepository.save(existingToken);
         } else {
             // Create a new verification token for first-time signup
-            VerificationToken newToken = new VerificationToken(user, token);
-            newToken.setExpirationTime(calculateExpirationTime());
+            VerificationToken newToken = new VerificationToken(user, token, new Date());
+            newToken.setExpirationTime(VerificationTokenUtil.calculateExpirationTime());
             verificationTokenRepository.save(newToken);
         }
-    }
-
-
-    // Utility method to calculate expiration
-    private Date calculateExpirationTime() {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(new Date());
-        calendar.add(Calendar.MINUTE, 10); // expiration 10 minutes
-        return calendar.getTime();
     }
 
     @Override
@@ -172,22 +156,52 @@ public class UserServiceimpl implements UserService{
                     .badRequest()
                     .body(
                         Map.of(
-                                "Error",
-                                "Invalid Old Token , Try Sign up again !"
+                            "Error",
+                            "Invalid Old Token , Try Sign up again !"
                         )
                     );
         }
+        // Check resend limit
+        if(verificationToken.getResendCount() >= 3){
+        return ResponseEntity
+                .badRequest()
+                .body(
+                    Map.of(
+                    "Error","You’ve exceeded maximum resends. Please sign up again."
+                    )
+                );
+        }
+
+        // Calculate time difference
+        long diffInMillis = new Date().getTime() - verificationToken.getLastTokenSendTime().getTime();
+        long diffInMinutes = diffInMillis / (1000 * 60);
+        if (diffInMinutes < 15 && verificationToken.getResendCount() > 1) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of(
+                            "Error",
+                            "Requested too early! Wait at least 15 minutes before requesting a new verification email."
+                    ));
+        }
+
+        // Update resend count and last send time
+        verificationToken.setResendCount(verificationToken.getResendCount() + 1);
+        verificationToken.setLastTokenSendTime(new Date());
+        verificationTokenRepository.save(verificationToken);
 
         User user =  verificationToken.getUser();
+        String token = UUID.randomUUID().toString();
 
         // resending Email using the Event and Event Listener
         publisher.publishEvent(new ResendVerificationTokenEvent(
                 user,
-                url
+                url,
+                token
         ));
 
         return ResponseEntity.ok(Map.of(
-                "message", "Verification link resent to your email"
+                "message", "Verification link resent to your email",
+                "token", token
         ));
     }
 
@@ -246,26 +260,39 @@ public class UserServiceimpl implements UserService{
     }
 
     @Override
-    public Map<String, Object> getCurrentUserFromToken(String token) {
-        // 1. Extract claims from JWT
-        Map<String, Object> claims = jwtService.extractAllClaims(token);
-
-        // 2. Fetch user from DB (optional: ensures latest data)
-        String email = claims.get("email").toString();
+    @Cacheable(value = "dashboardCache", key = "#email")
+    public Map<String, Object> getCurrentUserFromToken(String token, String email) {
+        // 1. Fetch user from DB (optional: ensures latest data)
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        // 3. Prepare response map
+        // 2. Prepare response map
         Map<String, Object> response = new HashMap<>();
+
+        Subscription sub = user.getSubscription();
+
         response.put("email", user.getEmail());
         response.put("firstName", user.getFirstName());
         response.put("lastName", user.getLastName());
         response.put("avatarUrl", user.getAvatarUrl());
-        response.put("subscriptionType", user.getSubscription().getSubscriptionType().name());
-        response.put("subscriptionStatus", user.getSubscription().getStatus().name());
+
+        response.put("subscriptionType", sub.getSubscriptionType().name());
+        response.put("subscriptionStatus", sub.getStatus().name());
+
         response.put("createdAt", user.getCreatedAt());
         response.put("winnersSelectedThisMonth", user.getWinnersSelectedThisMonth());
 
+        response.put("maxGiveaways", sub.getSubscriptionType().getMaxGiveaways());
+        response.put("remainingGiveaways", sub.getRemainingGiveaways());
+        response.put("maxComments", sub.getMaxComments());
+        response.put("maxWinners", sub.getMaxWinners());
+
+        Date expiryDate = sub.getExpiringDate();
+        if(expiryDate != null){
+            response.put("subscriptionExpiryDate", sub.getExpiringDate().getTime());
+            boolean isExpired = sub.getExpiringDate().before(new Date());
+            response.put("isSubscriptionExpired", isExpired);
+        }
         return response;
     }
 
@@ -347,10 +374,8 @@ public class UserServiceimpl implements UserService{
         return userModel;
     }
 
-
     @Override
     public void deletePasswordToken(String token) {
         passwordTokenRepository.deleteByToken(token);
     }
-
 }

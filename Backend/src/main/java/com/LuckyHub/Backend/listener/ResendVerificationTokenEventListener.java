@@ -33,10 +33,9 @@ public class ResendVerificationTokenEventListener implements ApplicationListener
         }
 
         // generate token and update
-        String token = UUID.randomUUID().toString();
-        userService.saveVerificationTokenForUser(user, token);
+        userService.saveVerificationTokenForUser(user, event.getToken());
 
-        String url = event.getUrl() + "verifyRegistration?token=" + token;
+        String url = event.getUrl() + "?token=" + event.getToken();
 
         String body = "Hello " + user.getFirstName() + ",\n\n" +
                 "We noticed you requested a new verification link.\n" +

@@ -20,6 +20,8 @@ public class VerificationToken {
      private Long id;
      private String token;
      private Date expirationTime;
+     private Date lastTokenSendTime;
+     int resendCount;
 
      @OneToOne(fetch = FetchType.EAGER)
      @JoinColumn(
@@ -29,20 +31,21 @@ public class VerificationToken {
      @JsonIgnore
      private User user;
 
-    public VerificationToken(User user, String token) {
+    public VerificationToken(User user, String token, Date lastTokenSendTime) {
         this.user = user;
         this.token = token;
-        this.expirationTime = calculateTime(EXPIRATION_TIME);
+        this.expirationTime = calculateTime();
+        this.lastTokenSendTime = lastTokenSendTime;
     }
     public VerificationToken(String token) {
         this.token = token;
-        this.expirationTime = calculateTime(EXPIRATION_TIME);
+        this.expirationTime = calculateTime();
     }
-
-    private Date calculateTime(int expirationTime) {
+    private Date calculateTime() {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(new Date().getTime());
-        calendar.add(Calendar.MINUTE, expirationTime);
+        calendar.add(Calendar.MINUTE, VerificationToken.EXPIRATION_TIME);
         return new Date(calendar.getTime().getTime());
     }
+
 }

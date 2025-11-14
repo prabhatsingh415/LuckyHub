@@ -34,7 +34,7 @@ public interface UserService {
 
     void deletePasswordToken(String token);
 
-    Map<String, Object> getCurrentUserFromToken(String token);
+    Map<String, Object> getCurrentUserFromToken(String token, String email);
 
     Long findUserIdByEmail(String  email);
 
@@ -43,4 +43,5 @@ public interface UserService {
     void upgradeSubscription(String paymentId);
 
     UserModel convertToUserModel(User user);
+
 }

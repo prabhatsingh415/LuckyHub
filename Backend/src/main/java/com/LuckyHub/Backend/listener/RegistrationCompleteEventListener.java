@@ -32,11 +32,9 @@ public class RegistrationCompleteEventListener implements ApplicationListener<Re
             throw new UserEmailNotFoundException("User email is missing or empty");
         }
 
-        // Generate token and save/update
-        String token = UUID.randomUUID().toString();
-        userService.saveVerificationTokenForUser(user, token);
+        userService.saveVerificationTokenForUser(user, event.getToken());
 
-        String url = event.getUrl() + "?token=" + token;
+        String url = event.getUrl() + "?token=" + event.getToken();
 
         String body = "Hello " + user.getFirstName() + ",\n\n" +
                 "Please click the link below to verify your account:\n" +
