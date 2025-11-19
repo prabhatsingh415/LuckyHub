@@ -64,6 +64,5 @@ export const {
   useRefreshTokenMutation,
   useForgotPasswordMutation,
   useSavePasswordMutation,
-  useResendVerificationQuery,
   useLazyResendVerificationQuery,
 } = apiSlice;
