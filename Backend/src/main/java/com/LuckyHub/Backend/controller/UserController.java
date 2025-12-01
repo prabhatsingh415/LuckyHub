@@ -5,12 +5,15 @@ import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.entity.VerificationToken;
 import com.LuckyHub.Backend.event.ForgotPasswordEvent;
 import com.LuckyHub.Backend.event.RegistrationCompleteEvent;
+import com.LuckyHub.Backend.exception.InvalidTokenException;
+import com.LuckyHub.Backend.exception.MaximumLimitReachedException;
 import com.LuckyHub.Backend.exception.RefreshTokenNotFound;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
 import com.LuckyHub.Backend.model.PasswordModel;
 import com.LuckyHub.Backend.model.UserModel;
 import com.LuckyHub.Backend.repository.VerificationTokenRepository;
 import com.LuckyHub.Backend.service.JWTService;
+import com.LuckyHub.Backend.service.RateLimiterService;
 import com.LuckyHub.Backend.service.RefreshTokenService;
 import com.LuckyHub.Backend.service.UserService;
 import com.LuckyHub.Backend.utils.RefreshTokenUtil;
@@ -41,15 +44,24 @@ public class UserController {
     private final RefreshTokenService refreshTokenService;
     private final JWTService jwtService;
     private final VerificationTokenRepository verificationTokenRepository;
+    private final RateLimiterService rateLimiterService;
 
     // -------------------- SIGNUP --------------------
     @PostMapping("/signup")
     public ResponseEntity<?> signUp(@RequestBody UserModel userModel, final HttpServletRequest request) {
-        log.info("Signup attempt for email: {}", userModel.getEmail());
+
+        String email = userModel.getEmail();
+        long userId = userService.findUserIdByEmail(email);
+        // Max Limit 5 times a day
+        if(!rateLimiterService.tryConsume("signUp", userId, 5)){
+            throw new MaximumLimitReachedException("You have reached the maximum limit for Sign up. Please try again after 24 hours.");
+        }
+
+        log.info("Signup attempt for email: {}", email);
         User user = userService.save(userModel);
 
         if (user == null) {
-            log.warn("Signup failed: Email already exists - {}", userModel.getEmail());
+            log.warn("Signup failed: Email already exists - {}", email);
             return ResponseEntity.badRequest().body(Map.of(
                     "status", "failed",
                     "message", "A user is already registered with this email!"
@@ -63,7 +75,7 @@ public class UserController {
                 token
         ));
 
-        log.info("Signup successful: Verification mail sent to {}", user.getEmail());
+        log.info("Signup successful: Verification mail sent to email -{}", email);
         return ResponseEntity.ok(Map.of(
                 "status", "success",
                 "message", "User registered successfully. Please verify your email.",
@@ -109,13 +121,21 @@ public class UserController {
     // -------------------- LOGIN --------------------
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody UserModel userModel) {
-        log.info("Login attempt for user: {}", userModel.getEmail());
+
+        String email = userModel.getEmail();
+        long userId = userService.findUserIdByEmail(email);
+        // Max Limit 8 times a day
+        if(!rateLimiterService.tryConsume("login", userId, 20)){
+            throw new MaximumLimitReachedException("You have reached the maximum limit for logging in. Please try again after 24 hours.");
+        }
+
+        log.info("Login attempt for user: {}", email);
         Map<String, Object> data = userService.verifyLogin(userModel);
 
         String refreshToken = data.getOrDefault("refreshToken", "").toString();
         ResponseCookie refreshCookie = RefreshTokenUtil.buildRefreshCookie(refreshToken);
 
-        log.info("Login successful for user: {}", userModel.getEmail());
+        log.info("Login successful for user: {}", email);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                 .body(Map.of(
@@ -171,19 +191,38 @@ public class UserController {
             return ResponseEntity.badRequest().body(Map.of("error", "Token must not be empty"));
         }
 
+        VerificationToken verificationToken = verificationTokenRepository.findByToken(oldToken);
+        if (verificationToken == null) {
+            log.warn("Invalid verification token: {}", oldToken);
+            throw new InvalidTokenException("Invalid token.");
+        }
+
+        User user = verificationToken.getUser();
+
+        if(user == null) throw new UserNotFoundException("User not found !");
+
+        if(!rateLimiterService.tryConsume("resendToken", user.getId(), 3)){
+             throw new MaximumLimitReachedException("You have reached the maximum limit for resending the verification email. Please try again after 24 hours.");
+        }
+
         String baseUrl = UrlUtil.buildBaseUrl(request);
         log.info("Resending verification token for {}", baseUrl);
-        return userService.resendVerifyToken(oldToken, request, "http://localhost:5173/verify_user");
+        return userService.resendVerifyToken(oldToken, request, "http://localhost:5173/verify_user", user);
     }
 
     // -------------------- FORGOT PASSWORD --------------------
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestBody PasswordModel passwordModel, HttpServletRequest request) {
+    public ResponseEntity<?> forgotPassword(@RequestBody PasswordModel passwordModel) {
         Optional<User> user = userService.findUserByEmail(passwordModel.getEmail());
 
         if(user.isEmpty()) {
             log.error("Password reset failed: User not found for {}", passwordModel.getEmail());
             throw new UserNotFoundException("No user found! Recheck your email.");
+        }
+
+      // checking for maximum limit
+        if(!rateLimiterService.tryConsume("forgotPassword", user.get().getId(), 5)){
+            throw new MaximumLimitReachedException("You have reached the maximum limit for forgot password. Please try again after 24 hours.");
         }
 
         String token = UUID.randomUUID().toString();
@@ -210,6 +249,14 @@ public class UserController {
     @PostMapping("/reset-password-confirm")
     public ResponseEntity<?> savePassword(@RequestParam("token") String token,
                                           @RequestBody PasswordModel passwordModel) {
+
+        Optional<User> user = userService.getUserByPasswordResetToken(token);
+
+        // checking for maximum limit
+        if(user.isPresent() && !rateLimiterService.tryConsume("resetPassword", user.get().getId(), 5)){
+            throw new MaximumLimitReachedException("You have reached the maximum limit for resetting password. Please try again after 24 hours.");
+        }
+
         String result = userService.validatePasswordToken(token);
 
         if (!"Valid".equalsIgnoreCase(result)) {
@@ -220,7 +267,6 @@ public class UserController {
             ));
         }
 
-        Optional<User> user = userService.getUserByPasswordResetToken(token);
         if (user.isPresent()) {
             userService.changePassword(user.get(), passwordModel.getNewPassword());
             userService.deletePasswordToken(token);
@@ -241,6 +287,7 @@ public class UserController {
     // -------------------- GET CURRENT USER --------------------
     @GetMapping("/me")
     public ResponseEntity<?> getMe(HttpServletRequest request) {
+
         try {
             final String authHeader = request.getHeader("Authorization");
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {

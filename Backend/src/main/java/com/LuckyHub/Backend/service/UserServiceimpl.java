@@ -148,7 +148,7 @@ public class UserServiceimpl implements UserService{
     }  //Signup Verification
 
     @Override
-    public ResponseEntity<?> resendVerifyToken(String oldToken, final HttpServletRequest request, String url) {
+    public ResponseEntity<?> resendVerifyToken(String oldToken, final HttpServletRequest request, String url, User user) {
         VerificationToken verificationToken = verificationTokenRepository.findByToken(oldToken);
 
         if(verificationToken == null){
@@ -161,6 +161,7 @@ public class UserServiceimpl implements UserService{
                         )
                     );
         }
+
         // Check resend limit
         if(verificationToken.getResendCount() >= 3){
         return ResponseEntity
@@ -189,7 +190,6 @@ public class UserServiceimpl implements UserService{
         verificationToken.setLastTokenSendTime(new Date());
         verificationTokenRepository.save(verificationToken);
 
-        User user =  verificationToken.getUser();
         String token = UUID.randomUUID().toString();
 
         // resending Email using the Event and Event Listener

@@ -132,4 +132,22 @@ public class GlobalExceptionHandler {
                         "message", ex.getMessage()
                 ));
     }
+
+    @ExceptionHandler(MaximumLimitReachedException.class)
+    public ResponseEntity<Map<String, String>> handleMaximumLimitReachedException(MaximumLimitReachedException ex){
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(Map.of(
+                        "error", "Maximum Limit Reached!",
+                        "message", ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidTokenException(InvalidTokenException ex){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "error", "Invalid Verification token!",
+                        "message", ex.getMessage()
+                ));
+    }
 }

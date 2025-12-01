@@ -18,7 +18,7 @@ public interface UserService {
     String verifyVerificationToken(String token);
 
     Map<String, Object> verifyLogin(UserModel userModel);
-    ResponseEntity<?>resendVerifyToken(String oldToken,  final HttpServletRequest request, String url);
+    ResponseEntity<?>resendVerifyToken(String oldToken,  final HttpServletRequest request, String url, User user);
 
     Optional<User> findUserByEmail(@Email(message = "Invalid email address") @NotBlank(message = "Email cannot be empty!") String email);
 
