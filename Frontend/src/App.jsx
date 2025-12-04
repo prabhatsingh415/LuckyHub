@@ -13,10 +13,13 @@ import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import VerifyUserPage from "./pages/verfyUserPage";
 import Loader from "./pages/Loader";
-import Home from "./pages/Home";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AuthSuccess from "./pages/AuthSuccess";
+import AppLayout from "./components/layout/AppLayout";
+import Dashboard from "./components/layout/Dashboard";
+import Settings from "./components/layout/Settings";
+import Home from "./components/layout/Home";
 
 import "./App.css";
 
@@ -53,13 +56,26 @@ function App() {
     { path: "/", element: <PublicRoute element={<LandingPage />} /> },
     { path: "/signup", element: <PublicRoute element={<SignUp />} /> },
     { path: "/signin", element: <PublicRoute element={<SignIn />} /> },
-    { path: "/home", element: <ProtectedRoute element={<Home />} /> },
     { path: "/verify_user", element: <VerifyUserPage /> },
     { path: "/terms-of-condition", element: <TermsOfService /> },
     { path: "/privacy-policy", element: <PrivacyPolicy /> },
     { path: "/signIn/forgot-password", element: <ForgotPassword /> },
     { path: "/reset-password", element: <ResetPassword /> },
     { path: "/auth-success", element: <AuthSuccess /> },
+    {
+      element: <AppLayout />,
+      children: [
+        { path: "/home", element: <ProtectedRoute element={<Home />} /> },
+        {
+          path: "/dashboard",
+          element: <ProtectedRoute element={<Dashboard />} />,
+        },
+        {
+          path: "/settings",
+          element: <ProtectedRoute element={<Settings />} />,
+        },
+      ],
+    },
   ]);
 
   return (
