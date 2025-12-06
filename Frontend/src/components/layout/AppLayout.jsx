@@ -3,10 +3,13 @@ import AppHeader from "./AppHeader";
 
 function AppLayout() {
   return (
-    <div className="w-screen bg-[#fafafa] flex flex-col justify-center items-center p-8 gap-8 dark:text-white dark:bg-[var(--black)]">
+    <div className="flex flex-col lg:flex-row h-screen w-screen overflow-hidden bg-[#fafafa] dark:bg-[var(--black)] dark:text-white">
       <AppHeader />
-      <main className="w-screen p-6">
-        <Outlet />
+
+      <main className="flex-1 h-full overflow-y-auto p-4 md:p-8">
+        <div className="w-full max-w-7xl mx-auto">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
