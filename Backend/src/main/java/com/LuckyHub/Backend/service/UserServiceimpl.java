@@ -50,7 +50,7 @@ public class UserServiceimpl implements UserService{
                                     .maxComments(SubscriptionTypes.FREE.getMaxComments())
                                     .maxWinners(SubscriptionTypes.FREE.getMaxWinners())
                                     .remainingGiveaways(SubscriptionTypes.FREE.getMaxGiveaways())
-                                    .startDate(null)
+                                    .startDate(new Date())
                                     .expiringDate(null)
                                     .paymentId(null)
                                     .build();
@@ -65,7 +65,7 @@ public class UserServiceimpl implements UserService{
         user.setUpdatedAt(new Date());
         user.setSubscription(subscription);
 
-        user.setAvatarUrl("https://cdn-icons-png.flaticon.com/512/149/149071.png");
+        user.setAvatarUrl("https://cdn-icons-png.flaticon.com/512/4712/4712109.png");
         user.setWinnersSelectedThisMonth(0);
 
         subscription.setUser(user);

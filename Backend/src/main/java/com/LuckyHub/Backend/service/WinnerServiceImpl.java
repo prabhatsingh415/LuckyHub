@@ -1,5 +1,6 @@
 package com.LuckyHub.Backend.service;
 
+import com.LuckyHub.Backend.entity.GiveawayHistory;
 import com.LuckyHub.Backend.entity.Subscription;
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.exception.PlanLimitExceedException;
@@ -10,10 +11,13 @@ import com.LuckyHub.Backend.model.Comment;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.model.WinnerRequest;
 import com.LuckyHub.Backend.model.WinnerResponse;
+import com.LuckyHub.Backend.repository.GiveawayHistoryRepository;
 import com.LuckyHub.Backend.repository.SubscriptonRepository;
 import org.springframework.stereotype.Service;
 
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,11 +27,13 @@ public class WinnerServiceImpl implements WinnerService {
     private final VideoService videoService;
     private final UserService userService;
     private final SubscriptonRepository subscriptionRepository;
+    private final GiveawayHistoryService giveawayHistoryService;
 
-    public WinnerServiceImpl(VideoService videoService, UserService userService, SubscriptonRepository subscriptonRepository) {
+    public WinnerServiceImpl(VideoService videoService, UserService userService, SubscriptonRepository subscriptonRepository, GiveawayHistoryRepository giveawayHistoryRepository, GiveawayHistoryService giveawayHistoryService) {
         this.videoService = videoService;
         this.userService = userService;
         this.subscriptionRepository = subscriptonRepository;
+        this.giveawayHistoryService = giveawayHistoryService;
     }
 
     @Override
@@ -56,10 +62,27 @@ public class WinnerServiceImpl implements WinnerService {
             subscriptionRepository.save(subscription);
         }
 
+
         //fetch the comments
         List<Comment> fetchedComments = videoService.fetchComments(request.getVideoLinks(), request.getKeyword(), plan);
 
         List<Comment> winners = videoService.selectWinner(fetchedComments,request.getNumberOfWinners());
+
+        List<String> winnerNames = winners.stream()
+                .map(Comment::getAuthorName)
+                .toList();
+
+
+        GiveawayHistory giveawayHistory = GiveawayHistory
+                .builder()
+                .commentCount(fetchedComments.size())
+                .winnersCount(winners.size())
+                .winners(winnerNames)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        giveawayHistoryService.saveHistory(giveawayHistory);
+
         return new WinnerResponse(
                 winners
         );

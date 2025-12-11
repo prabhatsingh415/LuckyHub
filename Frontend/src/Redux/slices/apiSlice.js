@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithReauth } from "../baseQueryWithReAuth";
 
 export const apiSlice = createApi({
@@ -54,6 +54,16 @@ export const apiSlice = createApi({
         method: "GET",
       }),
     }),
+    dashboardAPI: builder.query({
+      query: () => ({
+        url: "/user/me",
+        method: "GET",
+      }),
+    }),
+    History: builder.query({
+      query: () => ({ url: "/giveaway/history", method: "GET" }),
+      providesTags: ["Giveaway"],
+    }),
   }),
 });
 
@@ -65,4 +75,6 @@ export const {
   useForgotPasswordMutation,
   useSavePasswordMutation,
   useLazyResendVerificationQuery,
+  useDashboardAPIQuery,
+  useHistoryQuery,
 } = apiSlice;
