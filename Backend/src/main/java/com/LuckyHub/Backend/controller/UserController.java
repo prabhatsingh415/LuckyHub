@@ -9,6 +9,7 @@ import com.LuckyHub.Backend.exception.InvalidTokenException;
 import com.LuckyHub.Backend.exception.MaximumLimitReachedException;
 import com.LuckyHub.Backend.exception.RefreshTokenNotFound;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
+import com.LuckyHub.Backend.model.ChangeNameRequest;
 import com.LuckyHub.Backend.model.PasswordModel;
 import com.LuckyHub.Backend.model.UserModel;
 import com.LuckyHub.Backend.repository.VerificationTokenRepository;
@@ -51,12 +52,6 @@ public class UserController {
     public ResponseEntity<?> signUp(@RequestBody UserModel userModel, final HttpServletRequest request) {
 
         String email = userModel.getEmail();
-        long userId = userService.findUserIdByEmail(email);
-        // Max Limit 5 times a day
-        if(!rateLimiterService.tryConsume("signUp", userId, 5)){
-            throw new MaximumLimitReachedException("You have reached the maximum limit for Sign up. Please try again after 24 hours.");
-        }
-
         log.info("Signup attempt for email: {}", email);
         User user = userService.save(userModel);
 
@@ -66,6 +61,11 @@ public class UserController {
                     "status", "failed",
                     "message", "A user is already registered with this email!"
             ));
+        }
+
+        // Max Limit 5 times a day
+        if(!rateLimiterService.tryConsume("signUp", user.getId(), 5)){
+            throw new MaximumLimitReachedException("You have reached the maximum limit for Sign up. Please try again after 24 hours.");
         }
 
         String token = UUID.randomUUID().toString(); // generating token;
@@ -308,5 +308,37 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("status", "error", "message", e.getMessage()));
         }
+    }
+
+    // -------------------- Change User Name --------------------
+    @PutMapping("/updateName")
+    public ResponseEntity<?> changeUserName(ChangeNameRequest changeNameRequest, HttpServletRequest request){
+        try {
+                final String authHeader = request.getHeader("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                               return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                       .body(Map.of("status", "error", "message", "Missing or invalid Authorization header"));
+                }
+
+                String token = authHeader.substring(7);
+                String email = jwtService.extractUserEmail(token);
+
+                if(userService.changeUserName(email, changeNameRequest)){
+                   return ResponseEntity.ok(
+                           Map.of(
+                                   "message", "userName changed Successfully"
+                           )
+                   );
+                }
+
+        }catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "error", "message", e.getMessage()));
+        }
+
+        return ResponseEntity.status(400).body(
+                Map.of(
+                "message", "Something went wrong, unable to change userName"
+        ));
     }
 }

@@ -3,6 +3,7 @@ package com.LuckyHub.Backend.service;
 import com.LuckyHub.Backend.entity.*;
 import com.LuckyHub.Backend.event.ResendVerificationTokenEvent;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
+import com.LuckyHub.Backend.model.ChangeNameRequest;
 import com.LuckyHub.Backend.model.SubscriptionStatus;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.model.UserModel;
@@ -11,6 +12,7 @@ import com.LuckyHub.Backend.repository.UserRepository;
 import com.LuckyHub.Backend.repository.VerificationTokenRepository;
 import com.LuckyHub.Backend.utils.VerificationTokenUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -372,6 +374,28 @@ public class UserServiceimpl implements UserService{
         userModel.setLastName(user.getLastName());
         userModel.setPassword(user.getPassword());
         return userModel;
+    }
+
+    @Override
+    @Transactional
+    public boolean changeUserName(String email, ChangeNameRequest request) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if(user.isEmpty()) {
+            throw new UserNotFoundException("User not found");
+        }
+
+        if (Objects.equals(user.get().getFirstName(), request.getFirstName()) &&
+                Objects.equals(user.get().getLastName(), request.getLastName())) {
+            return false;
+        }
+
+
+         user.get().setFirstName(request.getFirstName());
+         user.get().setLastName(request.getLastName());
+
+         userRepository.save(user.get());
+
+        return true;
     }
 
     @Override

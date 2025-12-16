@@ -1,6 +1,7 @@
 package com.LuckyHub.Backend.service;
 
 import com.LuckyHub.Backend.entity.User;
+import com.LuckyHub.Backend.model.ChangeNameRequest;
 import com.LuckyHub.Backend.model.UserModel;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Email;
@@ -44,4 +45,5 @@ public interface UserService {
 
     UserModel convertToUserModel(User user);
 
+    boolean changeUserName(String email, ChangeNameRequest request);
 }
