@@ -22,10 +22,7 @@ public class Subscription {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(
-        name = "subscription_type",
-        nullable = false
-    )
+    @Column(name = "subscription_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private SubscriptionTypes subscriptionType;
 
@@ -33,13 +30,18 @@ public class Subscription {
     private Date expiringDate;
 
     @Enumerated(EnumType.STRING)
-    private SubscriptionStatus status;
+    private SubscriptionStatus status = SubscriptionStatus.NONE;
 
     private String paymentId;
 
-    private Integer maxComments;
-    private Integer maxWinners;
-    private Integer remainingGiveaways;
+    @Column(nullable = false)
+    private Integer maxComments = 300;
+
+    @Column(nullable = false)
+    private Integer maxWinners = 2;
+
+    @Column(nullable = false)
+    private Integer remainingGiveaways = 3;
 
     @OneToOne(mappedBy = "subscription")
     @JsonBackReference

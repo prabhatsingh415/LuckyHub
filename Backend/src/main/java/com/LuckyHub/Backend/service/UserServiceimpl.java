@@ -2,6 +2,7 @@ package com.LuckyHub.Backend.service;
 
 import com.LuckyHub.Backend.entity.*;
 import com.LuckyHub.Backend.event.ResendVerificationTokenEvent;
+import com.LuckyHub.Backend.exception.ImageUploadFailedException;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
 import com.LuckyHub.Backend.model.ChangeNameRequest;
 import com.LuckyHub.Backend.model.SubscriptionStatus;
@@ -11,10 +12,13 @@ import com.LuckyHub.Backend.repository.PasswordTokenRepository;
 import com.LuckyHub.Backend.repository.UserRepository;
 import com.LuckyHub.Backend.repository.VerificationTokenRepository;
 import com.LuckyHub.Backend.utils.VerificationTokenUtil;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +27,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.*;
 
 @Service
@@ -40,6 +46,8 @@ public class UserServiceimpl implements UserService{
     private final PasswordTokenRepository passwordTokenRepository;
     private final RefreshTokenService refreshTokenService;
     private final PaymentService paymentService;
+    private final CacheManager cacheManager;
+    private final Cloudinary cloudinary;
 
     public User save(UserModel userModel){
          Optional<User> optUser = userRepository.findByEmail(userModel.getEmail());
@@ -389,14 +397,47 @@ public class UserServiceimpl implements UserService{
             return false;
         }
 
-
          user.get().setFirstName(request.getFirstName());
          user.get().setLastName(request.getLastName());
+
+        if (cacheManager.getCache("dashboardCache") != null) {
+            Objects.requireNonNull(cacheManager.getCache("dashboardCache")).evict(email);
+        }
 
          userRepository.save(user.get());
 
         return true;
     }
+
+    @Override
+    @Transactional
+    public boolean changeAvatar(String email, MultipartFile file) {
+        Map<String, Object> upload;
+        try {
+            upload = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+                            "folder", "avatars",
+                            "overwrite", true,
+                            "resource_type", "image"
+                    )
+            );
+
+            Optional<User> user = userRepository.findByEmail(email);
+
+            if(user.isEmpty())throw new UserNotFoundException("User not found !");
+
+            user.get().setAvatarUrl((String) upload.get("url"));
+
+            if (cacheManager.getCache("dashboardCache") != null) {
+                Objects.requireNonNull(cacheManager.getCache("dashboardCache")).evict(email);
+            }
+
+        } catch (IOException e) {
+            throw new ImageUploadFailedException("Image uploading failed !");
+        }
+
+        return true;
+    }
+
 
     @Override
     public void deletePasswordToken(String token) {

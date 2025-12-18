@@ -29,6 +29,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 import java.util.Optional;
@@ -312,7 +313,7 @@ public class UserController {
 
     // -------------------- Change User Name --------------------
     @PutMapping("/updateName")
-    public ResponseEntity<?> changeUserName(ChangeNameRequest changeNameRequest, HttpServletRequest request){
+    public ResponseEntity<?> changeUserName(@RequestBody ChangeNameRequest changeNameRequest, HttpServletRequest request){
         try {
                 final String authHeader = request.getHeader("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -340,5 +341,36 @@ public class UserController {
                 Map.of(
                 "message", "Something went wrong, unable to change userName"
         ));
+    }
+
+    // -------------------- Change Avatar --------------------
+    @PutMapping("/updateAvatar")
+    public ResponseEntity<?> changeAvatar(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
+
+        try {
+            final String authHeader = request.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("status", "error", "message", "Missing or invalid Authorization header"));
+            }
+
+            String token = authHeader.substring(7);
+            String email = jwtService.extractUserEmail(token);
+
+             if(userService.changeAvatar(email, file)){
+                return ResponseEntity.ok().body(
+                        Map.of("Message", "Image Uploaded Successfully !")
+                );
+             }
+
+        }catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "error", "message", e.getMessage()));
+        }
+
+       return ResponseEntity.status(400).body(
+                Map.of(
+                        "message", "Something went wrong, unable to Profile Picture"
+                ));
     }
 }

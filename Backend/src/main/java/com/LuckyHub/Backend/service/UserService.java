@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 import java.util.Optional;
@@ -46,4 +47,6 @@ public interface UserService {
     UserModel convertToUserModel(User user);
 
     boolean changeUserName(String email, ChangeNameRequest request);
+
+    boolean changeAvatar(String email, MultipartFile file);
 }
