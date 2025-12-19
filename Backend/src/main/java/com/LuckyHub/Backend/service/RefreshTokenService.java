@@ -42,7 +42,7 @@ public class RefreshTokenService {
         return repository.findByToken(token);
     }
 
-    public RefreshToken verifyExpiration(RefreshToken token){
+    public void verifyExpiration(RefreshToken token){
         if (token == null) {
             throw new RefreshTokenExpiredException("Invalid refresh token.");
         }
@@ -50,14 +50,13 @@ public class RefreshTokenService {
              repository.delete(token);
             throw new RefreshTokenExpiredException("Refresh token expired. Please log in again.");
         }
-        return token;
     }
 
-    public int deleteByUserId(Long userId) {
+    public void deleteByUserId(Long userId) {
          Optional<User> user = userRepository.findById(userId);
          if(user.isEmpty()){
              throw new UserNotFoundException("Unable to delete the refresh Token!, No user Found");
          }
-        return repository.deleteByUser(user.get());
+        repository.deleteByUser(user.get());
     }
 }

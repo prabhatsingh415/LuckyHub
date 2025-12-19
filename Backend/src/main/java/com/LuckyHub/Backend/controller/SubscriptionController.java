@@ -1,8 +1,11 @@
 package com.LuckyHub.Backend.controller;
 
+import com.LuckyHub.Backend.entity.Payment;
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.exception.InvalidAmountForAnyPlanException;
+import com.LuckyHub.Backend.exception.PaymentNotFoundException;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
+import com.LuckyHub.Backend.model.LastPaymentModel;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.service.JWTService;
 import com.LuckyHub.Backend.service.PaymentService;
@@ -34,7 +37,7 @@ public class SubscriptionController {
     private final SubscriptionService subscriptionService;
     private final UserService userService;
     private final PaymentService paymentService;
-    private  final JWTService jwtService;
+    private final JWTService jwtService;
 
     public SubscriptionController(SubscriptionService subscriptionService, UserService userService, PaymentService paymentService, JWTService jwtService) {
         this.subscriptionService = subscriptionService;
@@ -70,7 +73,7 @@ public class SubscriptionController {
         RazorpayClient razorpayClient = new RazorpayClient(key, secret);
 
 
-        Long userId = getUserId(request);
+        Long userId = subscriptionService.getUserId(request);
         if(userId == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("status", "error", "message", "User Not Found!"));
@@ -106,7 +109,7 @@ public class SubscriptionController {
     @PostMapping("/verify")
     public ResponseEntity<?> verifyPayment(HttpServletRequest request, @RequestBody Map<String, Object> data) {
 
-        Long userId = getUserId(request);
+        Long userId = subscriptionService.getUserId(request);
         Optional<User> user = userService.getUserById(userId);
 
         if (user.isEmpty()) throw new UserNotFoundException("User Not Found For Given Id");
@@ -150,17 +153,18 @@ public class SubscriptionController {
         }
     }
 
-    public Long getUserId(HttpServletRequest request){
-        final String authHeader = request.getHeader("Authorization");
+    @GetMapping("/lastPayment")
+    public ResponseEntity<?> getLastPayment(HttpServletRequest request){
+        String authHeader = request.getHeader("Authorization");
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return null;
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Missing or invalid Authorization header"));
         }
+
         String token = authHeader.substring(7);
-
         String email = jwtService.extractUserEmail(token);
-        Long ID = userService.findUserIdByEmail(email);
 
-        return ID;
+        return ResponseEntity.ok(paymentService.getLastPayment(email));
     }
-
 }

@@ -8,18 +8,10 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.util.Map;
+import java.util.Objects;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                        "error", "Something went wrong",
-                        "message", ex.getMessage()
-                ));
-    }
 
     @ExceptionHandler(UsernameNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleUserNotFound(UsernameNotFoundException ex) {
@@ -70,7 +62,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         String message = "Duplicate entry detected. Please check your input.";
         if (ex.getCause() != null) {
-            message = ex.getRootCause().getMessage();
+            message = Objects.requireNonNull(ex.getRootCause()).getMessage();
         }
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of(
@@ -150,4 +142,38 @@ public class GlobalExceptionHandler {
                         "message", ex.getMessage()
                 ));
     }
+
+    public ResponseEntity<Map<String, String>> handlesImageUploadExceptionFailed(ImageUploadFailedException ex){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "error", "Internal error !",
+                        "message", ex.getMessage()
+                ));
+    }
+
+    public ResponseEntity<Map<String, String>> handlePasswordMismatchException(PasswordMismatchException ex){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "error", "Internal error !",
+                        "message", ex.getMessage()
+                ));
+    }
+
+    public ResponseEntity<Map<String, String>> handleInvalidCurrentPasswordException(InvalidCurrentPasswordException ex){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "error", "Internal error !",
+                        "message", ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "error", "Something went wrong",
+                        "message", ex.getMessage()
+                ));
+    }
+
 }

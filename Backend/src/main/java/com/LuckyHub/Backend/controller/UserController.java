@@ -366,7 +366,7 @@ public class UserController {
 
     // -------------------- Change Password --------------------
 
-    @PutMapping("/change-password")
+    @PutMapping("/changePassword")
     public ResponseEntity<?> changePassword(
             @RequestBody ChangePasswordModel model,
             HttpServletRequest request

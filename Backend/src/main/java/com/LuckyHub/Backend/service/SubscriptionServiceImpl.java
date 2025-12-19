@@ -4,6 +4,7 @@ import com.LuckyHub.Backend.entity.Subscription;
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -15,9 +16,13 @@ import java.util.List;
 public class SubscriptionServiceImpl implements SubscriptionService {
 
     private final UserRepository userRepository;
+    private final UserService userService;
+    private final JWTService jwtService;
 
-    public SubscriptionServiceImpl(UserRepository userRepository) {
+    public SubscriptionServiceImpl(UserRepository userRepository, UserService userService, JWTService jwtService) {
         this.userRepository = userRepository;
+        this.userService = userService;
+        this.jwtService = jwtService;
     }
 
 
@@ -67,5 +72,17 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         userRepository.saveAll(users);
     }
 
+    public Long getUserId(HttpServletRequest request){
+        final String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return null;
+        }
+        String token = authHeader.substring(7);
+
+        String email = jwtService.extractUserEmail(token);
+        Long ID = userService.findUserIdByEmail(email);
+
+        return ID;
+    }
 
 }

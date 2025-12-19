@@ -1,24 +1,30 @@
 package com.LuckyHub.Backend.service;
 
 import com.LuckyHub.Backend.entity.Payment;
+import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.exception.PaymentNotFoundException;
+import com.LuckyHub.Backend.exception.UserNotFoundException;
+import com.LuckyHub.Backend.model.LastPaymentModel;
 import com.LuckyHub.Backend.model.PaymentStatus;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.repository.PaymentRepository;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Map;
 
 
 @Service
     public class PaymentServiceImpl implements PaymentService {
 
         private final PaymentRepository paymentRepo;
+        private final UserService userService;
 
-        public PaymentServiceImpl(PaymentRepository paymentRepo) {
+        public PaymentServiceImpl(PaymentRepository paymentRepo, @Lazy UserService userService) {
             this.paymentRepo = paymentRepo;
+            this.userService = userService;
         }
 
     @Override
@@ -55,8 +61,30 @@ import java.util.Map;
 
     @Override
     public Payment getPaymentDataToUpgradeService(String paymentId) {
-       Payment payment = paymentRepo.findByPaymentId(paymentId);
-       return payment;
+        return paymentRepo.findByPaymentId(paymentId);
+    }
+
+    @Override
+    public LastPaymentModel getLastPayment(String email) {
+
+        User user = userService.findUserByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found !"));
+
+        Payment payment = paymentRepo.findByUserId(user.getId())
+                .orElseThrow(() -> new PaymentNotFoundException("Last payment not found !"));
+
+        LocalDate startDate = payment.getPaymentDate().toLocalDate();
+        LocalDate endDate = startDate.plusMonths(1);
+
+        return LastPaymentModel.builder()
+                .paymentId(payment.getPaymentId())
+                .amount(payment.getAmount())
+                .currency(payment.getCurrency())
+                .subscriptionType(payment.getPlanType())
+                .periodStart(startDate)
+                .periodEnd(endDate)
+                .nextBillingDate(endDate)
+                .build();
     }
 }
 

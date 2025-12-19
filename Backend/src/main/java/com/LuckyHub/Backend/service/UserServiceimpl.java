@@ -444,9 +444,13 @@ public class UserServiceimpl implements UserService{
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
+
         if (!model.getNewPassword().equals(model.getConfirmNewPassword())) {
+            System.out.println("new pass -----> 🦁🦁🦁🦁 "+ model.getNewPassword());
+            System.out.println("confirm new pass -----> 😈😈😈😈😈😈 "+ model.getCurrentPassword());
             throw new PasswordMismatchException("New password and confirmation password do not match.");
         }
+
 
         if (!bCryptPasswordEncoder.matches(
                 model.getCurrentPassword(),
