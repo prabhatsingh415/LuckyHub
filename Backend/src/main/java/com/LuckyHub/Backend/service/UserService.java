@@ -2,6 +2,7 @@ package com.LuckyHub.Backend.service;
 
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.model.ChangeNameRequest;
+import com.LuckyHub.Backend.model.ChangePasswordModel;
 import com.LuckyHub.Backend.model.UserModel;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Email;
@@ -48,5 +49,7 @@ public interface UserService {
 
     boolean changeUserName(String email, ChangeNameRequest request);
 
-    boolean changeAvatar(String email, MultipartFile file);
+    void changeAvatar(String email, MultipartFile file);
+
+    void updatePassword(String email, ChangePasswordModel changePasswordModel);
 }

@@ -10,6 +10,7 @@ import com.LuckyHub.Backend.exception.MaximumLimitReachedException;
 import com.LuckyHub.Backend.exception.RefreshTokenNotFound;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
 import com.LuckyHub.Backend.model.ChangeNameRequest;
+import com.LuckyHub.Backend.model.ChangePasswordModel;
 import com.LuckyHub.Backend.model.PasswordModel;
 import com.LuckyHub.Backend.model.UserModel;
 import com.LuckyHub.Backend.repository.VerificationTokenRepository;
@@ -346,31 +347,44 @@ public class UserController {
     // -------------------- Change Avatar --------------------
     @PutMapping("/updateAvatar")
     public ResponseEntity<?> changeAvatar(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
 
-        try {
-            final String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("status", "error", "message", "Missing or invalid Authorization header"));
-            }
-
-            String token = authHeader.substring(7);
-            String email = jwtService.extractUserEmail(token);
-
-             if(userService.changeAvatar(email, file)){
-                return ResponseEntity.ok().body(
-                        Map.of("Message", "Image Uploaded Successfully !")
-                );
-             }
-
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("status", "error", "message", e.getMessage()));
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Missing or invalid Authorization header"));
         }
 
-       return ResponseEntity.status(400).body(
-                Map.of(
-                        "message", "Something went wrong, unable to Profile Picture"
-                ));
+        String token = authHeader.substring(7);
+        String email = jwtService.extractUserEmail(token);
+
+        userService.changeAvatar(email, file);
+
+        return ResponseEntity.ok(
+                Map.of("message", "Image uploaded successfully.")
+        );
+    }
+
+    // -------------------- Change Password --------------------
+
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+            @RequestBody ChangePasswordModel model,
+            HttpServletRequest request
+    ) {
+        String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Missing or invalid Authorization header"));
+        }
+
+        String token = authHeader.substring(7);
+        String email = jwtService.extractUserEmail(token);
+
+        userService.updatePassword(email, model);
+
+        return ResponseEntity.ok(
+                Map.of("message", "Password changed successfully.")
+        );
     }
 }

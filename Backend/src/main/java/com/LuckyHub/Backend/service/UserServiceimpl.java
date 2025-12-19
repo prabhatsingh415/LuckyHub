@@ -3,11 +3,10 @@ package com.LuckyHub.Backend.service;
 import com.LuckyHub.Backend.entity.*;
 import com.LuckyHub.Backend.event.ResendVerificationTokenEvent;
 import com.LuckyHub.Backend.exception.ImageUploadFailedException;
+import com.LuckyHub.Backend.exception.InvalidCurrentPasswordException;
+import com.LuckyHub.Backend.exception.PasswordMismatchException;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
-import com.LuckyHub.Backend.model.ChangeNameRequest;
-import com.LuckyHub.Backend.model.SubscriptionStatus;
-import com.LuckyHub.Backend.model.SubscriptionTypes;
-import com.LuckyHub.Backend.model.UserModel;
+import com.LuckyHub.Backend.model.*;
 import com.LuckyHub.Backend.repository.PasswordTokenRepository;
 import com.LuckyHub.Backend.repository.UserRepository;
 import com.LuckyHub.Backend.repository.VerificationTokenRepository;
@@ -409,34 +408,57 @@ public class UserServiceimpl implements UserService{
         return true;
     }
 
-    @Override
     @Transactional
-    public boolean changeAvatar(String email, MultipartFile file) {
+    @Override
+    public void changeAvatar(String email, MultipartFile file) {
+
         Map<String, Object> upload;
         try {
-            upload = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+            upload = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
                             "folder", "avatars",
                             "overwrite", true,
                             "resource_type", "image"
                     )
             );
-
-            Optional<User> user = userRepository.findByEmail(email);
-
-            if(user.isEmpty())throw new UserNotFoundException("User not found !");
-
-            user.get().setAvatarUrl((String) upload.get("url"));
-
-            if (cacheManager.getCache("dashboardCache") != null) {
-                Objects.requireNonNull(cacheManager.getCache("dashboardCache")).evict(email);
-            }
-
         } catch (IOException e) {
-            throw new ImageUploadFailedException("Image uploading failed !");
+            throw new ImageUploadFailedException("Image uploading failed");
         }
 
-        return true;
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        user.setAvatarUrl((String) upload.get("url"));
+        userRepository.save(user);
+
+        if (cacheManager.getCache("dashboardCache") != null) {
+            Objects.requireNonNull(cacheManager.getCache("dashboardCache")).evict(email);
+        }
     }
+
+    @Override
+    @Transactional
+    public void updatePassword(String email, ChangePasswordModel model) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        if (!model.getNewPassword().equals(model.getConfirmNewPassword())) {
+            throw new PasswordMismatchException("New password and confirmation password do not match.");
+        }
+
+        if (!bCryptPasswordEncoder.matches(
+                model.getCurrentPassword(),
+                user.getPassword()
+        )) {
+            throw new InvalidCurrentPasswordException("Current password is incorrect.");
+        }
+
+        user.setPassword(bCryptPasswordEncoder.encode(model.getNewPassword()));
+        userRepository.save(user);
+    }
+
 
 
     @Override
