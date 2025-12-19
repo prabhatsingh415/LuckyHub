@@ -446,8 +446,6 @@ public class UserServiceimpl implements UserService{
 
 
         if (!model.getNewPassword().equals(model.getConfirmNewPassword())) {
-            System.out.println("new pass -----> 🦁🦁🦁🦁 "+ model.getNewPassword());
-            System.out.println("confirm new pass -----> 😈😈😈😈😈😈 "+ model.getCurrentPassword());
             throw new PasswordMismatchException("New password and confirmation password do not match.");
         }
 
