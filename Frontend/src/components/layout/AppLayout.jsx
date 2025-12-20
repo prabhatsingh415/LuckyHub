@@ -6,8 +6,8 @@ function AppLayout() {
     <div className="flex flex-col lg:flex-row h-screen w-screen overflow-hidden bg-[#fafafa] dark:bg-[var(--black)] dark:text-white">
       <AppHeader />
 
-      <main className="flex-1 h-full overflow-y-auto p-4 md:p-8">
-        <div className="w-full max-w-7xl mx-auto">
+      <main className="flex-1 h-full overflow-y-auto">
+        <div className="w-full">
           <Outlet />
         </div>
       </main>

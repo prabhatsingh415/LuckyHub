@@ -1,13 +1,19 @@
+import { useEffect, useState } from "react";
+import useTimeout from "../hook/useTimeout";
+import { useLazyResendVerificationQuery } from "../Redux/slices/apiSlice";
+import Loader from "./Loader";
+
 export default function InfoModal({
   isOpen,
   title = "Information",
   message = "",
-  type = "info", // "success" | "error" | "info"
+  type = "info",
   okText = "OK",
   cancelText = null,
   onOk,
   onCancel,
   redirectUrl = null,
+  isContainsResendBtn = true,
 }) {
   if (!isOpen) return null;
 
@@ -17,61 +23,154 @@ export default function InfoModal({
     info: "from-[#ff9933]/20 to-[#fff176]/10 text-[#ffcc33]",
   };
 
+  // ---- RESEND LOGIC ----
+  const MAX_SESSION_ATTEMPTS = 3;
+  const COOL_DOWN_SECONDS = 900; // 15 min
+
+  const [resendAttempts, setResendAttempts] = useState(
+    Number(localStorage.getItem("resendAttempts") || 0)
+  );
+
+  const { secondsLeft, setSecondsLeft } = useTimeout(COOL_DOWN_SECONDS);
+  const [disableBtn, setDisableBtn] = useState(true);
+
+  const [modalMsg, setModalMsg] = useState(message);
+  const [modalType, setModalType] = useState(type);
+  const [modalTitle, setModalTitle] = useState(title);
+
+  const [resendVerification, { data, isError, isLoading, isSuccess, error }] =
+    useLazyResendVerificationQuery();
+
+  // initial timer
+  useEffect(() => {
+    if (isContainsResendBtn) setSecondsLeft(COOL_DOWN_SECONDS);
+  }, [isContainsResendBtn]);
+
+  useEffect(() => {
+    if (secondsLeft === 0) setDisableBtn(false);
+  }, [secondsLeft]);
+
+  useEffect(() => {
+    if (isLoading) {
+      setModalTitle("Please Wait");
+      setModalMsg("Resending verification email...");
+      setModalType("info");
+    }
+
+    if (isSuccess) {
+      setModalTitle("Success");
+      setModalMsg("Verification email sent successfully!");
+      setModalType("success");
+
+      if (data?.token) {
+        localStorage.setItem("SignUpToken", data.token);
+      }
+    }
+
+    if (isError) {
+      if (error?.status === 429) {
+        setModalTitle("Limit Reached");
+        setModalMsg(
+          "You reached maximum limit of resending verification link. Try again tomorrow."
+        );
+        setModalType("error");
+        setDisableBtn(true);
+        return;
+      }
+
+      setModalTitle("Error");
+      setModalMsg(
+        error?.data?.Error ||
+          "Failed to resend verification email. Try again later."
+      );
+      setModalType("error");
+    }
+  }, [isLoading, isSuccess, isError]);
+
+  const token = localStorage.getItem("SignUpToken");
+
+  const handleResend = () => {
+    // 3 Attempts per signup session limit
+    if (resendAttempts >= MAX_SESSION_ATTEMPTS) {
+      setModalTitle("Limit Reached");
+      setModalMsg(
+        "You reached maximum limit of resend verification email. Try signing up again."
+      );
+      setModalType("error");
+      return;
+    }
+
+    resendVerification(token);
+
+    const updated = resendAttempts + 1;
+    setResendAttempts(updated);
+    localStorage.setItem("resendAttempts", updated);
+
+    setDisableBtn(true);
+    setSecondsLeft(COOL_DOWN_SECONDS);
+  };
+
   const handleOk = () => {
     if (redirectUrl) window.location.href = redirectUrl;
     else if (onOk) onOk();
   };
 
-  const handleCancel = () => {
-    if (onCancel) onCancel();
-  };
+  const handleCancel = () => onCancel && onCancel();
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-md z-[9999] animate-fadeIn">
       <div
-        className={`relative w-[90%] max-w-md text-center text-white border border-[#2a2a2a] bg-gradient-to-br ${colorMap[type]} rounded-2xl p-8 shadow-[0_0_30px_rgba(255,255,255,0.05)] animate-scaleIn`}
+        className={`relative w-[90%] max-w-md text-center text-white border border-[#2a2a2a] bg-gradient-to-br ${colorMap[modalType]} rounded-2xl p-8`}
       >
-        {/* Title */}
-        <h2 className="text-2xl font-bold mb-3 tracking-wide">{title}</h2>
+        <h2 className="text-2xl font-bold mb-3">{modalTitle}</h2>
 
-        {/* Message */}
-        <p className="text-gray-300 text-sm leading-relaxed mb-6">{message}</p>
+        {isLoading ? (
+          <Loader />
+        ) : (
+          <p className="text-gray-300 text-sm mb-6">{modalMsg}</p>
+        )}
 
-        {/* Buttons */}
         <div className="flex justify-center gap-4 mt-4">
           {cancelText && (
             <button
               onClick={handleCancel}
-              className="px-5 py-2 rounded-lg border border-[#2f2f2f] bg-[#121212] hover:bg-[#1c1c1c] transition-all text-gray-300"
+              className="px-5 py-2 rounded-lg border bg-[#121212] hover:bg-[#1c1c1c]"
             >
               {cancelText}
             </button>
           )}
           <button
             onClick={handleOk}
-            className="px-6 py-2 font-semibold text-white rounded-lg bg-gradient-to-r from-[#ff3333] via-[#ff6b0f] to-[#ff9933] hover:opacity-90 transition-all"
+            className="px-6 py-2 rounded-lg bg-gradient-to-r from-[#ff3333] via-[#ff6b0f] to-[#ff9933]"
           >
             {okText}
           </button>
         </div>
 
-        <div className="absolute inset-0 rounded-2xl border border-[#ff3333]/10 pointer-events-none"></div>
-      </div>
+        {isContainsResendBtn && modalType !== "error" && (
+          <div className="mt-4">
+            <button
+              onClick={handleResend}
+              disabled={disableBtn}
+              className={`hover:text-zinc-500 ${
+                disableBtn ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            >
+              Resend
+            </button>
 
-      <style>
-        {`
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          @keyframes scaleIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-          }
-          .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
-          .animate-scaleIn { animation: scaleIn 0.25s ease-out; }
-        `}
-      </style>
+            {disableBtn && (
+              <div className="text-sm text-gray-400 mt-1">
+                {Math.floor(secondsLeft / 60)}m{" "}
+                {secondsLeft % 60 < 10
+                  ? "0" + (secondsLeft % 60)
+                  : secondsLeft % 60}
+                s remaining
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
