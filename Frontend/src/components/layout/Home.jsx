@@ -10,7 +10,10 @@ import {
   Gamepad2,
   ShoppingBag,
 } from "lucide-react";
-import { useGetWinnersMutation } from "../../Redux/slices/apiSlice";
+import {
+  useGetSubscriptionQuery,
+  useGetWinnersMutation,
+} from "../../Redux/slices/apiSlice";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import InfoModal from "../../pages/InfoModal";
@@ -72,6 +75,29 @@ function Home() {
     const newUrls = [...urls];
     newUrls[index] = value;
     setUrls(newUrls);
+  };
+
+  const { data: subscriptionData, error: subError } = useGetSubscriptionQuery();
+
+  if (subError) {
+    setModal({
+      open: true,
+      type: "error",
+      title: "Error",
+      message: subError?.data?.message || "Something Went Wrong !",
+    });
+  }
+
+  const getWinnerOptions = () => {
+    const max = subscriptionData?.maxWinners;
+
+    // if (!max || max === null || max === undefined) return [];
+
+    // if (max <= 5) {
+    //   return Array.from({ length: max }, (_, i) => i + 1);
+    // }
+
+    return [1, 2, 3, 5, 7, 10, 15, 20];
   };
 
   // --- Pick Winners ---
@@ -176,7 +202,7 @@ function Home() {
   // 2. COUNTDOWN
   if (gameState === "countdown") {
     return (
-      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center text-white relative overflow-hidden bg-black">
+      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center text-white relative overflow-hidden  dark:bg-[#0A0A0A]">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -326,7 +352,7 @@ function Home() {
                     value={url}
                     onChange={(e) => handleUrlChange(index, e.target.value)}
                     placeholder={`Video URL ${index + 1}`}
-                    className="w-full rounded-xl bg-zinc-900/60 border border-zinc-800 px-11 py-3.5 text-sm text-white focus:ring-2 focus:ring-orange-500 transition-all"
+                    className="w-full rounded-xl dark:bg-zinc-900/60 border border-zinc-800 px-11 py-3.5 text-sm dark:text-white focus:ring-2 focus:ring-orange-500 transition-all"
                   />
                 </div>
                 {urls.length > 1 && (
@@ -351,8 +377,8 @@ function Home() {
 
           {/* Keyword Input */}
           <div className="space-y-3 px-1">
-            <h3 className="text-sm font-medium text-zinc-200">
-              Required Keyword{" "}
+            <h3 className="text-sm font-medium dark:text-zinc-200">
+              Required Keyword
               <span className="text-[10px] text-zinc-500 ml-2">(Optional)</span>
             </h3>
             <input
@@ -360,7 +386,7 @@ function Home() {
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="e.g. Winner2025"
-              className="w-full rounded-xl bg-zinc-900/60 border border-zinc-800 px-4 py-3.5 text-sm text-white"
+              className="w-full rounded-xl dark:bg-zinc-900/60 border border-zinc-800 px-4 py-3.5 text-sm dark:text-white"
             />
           </div>
 
@@ -368,11 +394,14 @@ function Home() {
           <div className="space-y-4">
             <select
               value={winnersCount}
-              onChange={(e) => setWinnersCount(e.target.value)}
-              className="w-full rounded-xl bg-zinc-900/60 border border-zinc-800 px-4 py-3 text-sm text-white"
+              onChange={(e) => setWinnersCount(Number(e.target.value))}
+              className="w-full rounded-xl dark:bg-zinc-900/60 border border-zinc-800 px-4 py-3 text-sm dark:text-white"
             >
-              <option value="1">1 Winner</option>
-              <option value="2">2 Winners</option>
+              {getWinnerOptions().map((count) => (
+                <option key={count} value={count}>
+                  {count} {count === 1 ? "Winner" : "Winners"}
+                </option>
+              ))}
             </select>
 
             <button

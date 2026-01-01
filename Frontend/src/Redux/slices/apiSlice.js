@@ -64,6 +64,56 @@ export const apiSlice = createApi({
       query: () => ({ url: "/giveaway/history", method: "GET" }),
       providesTags: ["Giveaway"],
     }),
+    changeName: builder.mutation({
+      query: (data) => ({
+        url: "/user/updateName",
+        method: "PUT",
+        body: {
+          firstName: data.firstName,
+          lastName: data.lastName,
+        },
+      }),
+    }),
+    changeAvatar: builder.mutation({
+      query: (formData) => ({
+        url: "/user/updateAvatar",
+        method: "PUT",
+        body: formData,
+      }),
+    }),
+
+    changePassword: builder.mutation({
+      query: (data) => ({
+        url: "/user/changePassword",
+        method: "PUT",
+        body: data,
+      }),
+    }),
+
+    getLastPayment: builder.query({
+      query: () => ({
+        url: "/subscription/lastPayment",
+        method: "GET",
+      }),
+      providesTags: ["Subscription"],
+    }),
+
+    getWinners: builder.mutation({
+      query: (data) => ({
+        url: "/giveaway/pick-a-winner",
+        method: "POST",
+        body: data,
+      }),
+      providesTags: ["Giveaway"],
+    }),
+
+    getSubscription: builder.query({
+      query: (data) => ({
+        url: "/subscription/getSubscription",
+        method: "GET",
+      }),
+      providesTags: ["Subscription"],
+    }),
   }),
 });
 
@@ -77,4 +127,10 @@ export const {
   useLazyResendVerificationQuery,
   useDashboardAPIQuery,
   useHistoryQuery,
+  useChangeNameMutation,
+  useChangeAvatarMutation,
+  useChangePasswordMutation,
+  useGetLastPaymentQuery,
+  useGetWinnersMutation,
+  useGetSubscriptionQuery,
 } = apiSlice;
