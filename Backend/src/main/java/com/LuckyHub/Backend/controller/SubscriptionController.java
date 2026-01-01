@@ -167,4 +167,19 @@ public class SubscriptionController {
 
         return ResponseEntity.ok(paymentService.getLastPayment(email));
     }
+
+    @GetMapping("/getSubscription")
+    public ResponseEntity<?> getSubscription(HttpServletRequest request){
+        String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Missing or invalid Authorization header"));
+        }
+
+        String token = authHeader.substring(7);
+        String email = jwtService.extractUserEmail(token);
+
+        return ResponseEntity.ok(subscriptionService.getUserSubscription(email));
+    }
 }

@@ -2,6 +2,7 @@ package com.LuckyHub.Backend.service;
 
 import com.LuckyHub.Backend.entity.Subscription;
 import com.LuckyHub.Backend.entity.User;
+import com.LuckyHub.Backend.exception.UserNotFoundException;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class SubscriptionServiceImpl implements SubscriptionService {
@@ -83,6 +85,15 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         Long ID = userService.findUserIdByEmail(email);
 
         return ID;
+    }
+
+    @Override
+    public Object getUserSubscription(String email) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isEmpty()){
+            return new UserNotFoundException("User not found !");
+        }
+        return user.get().getSubscription();
     }
 
 }

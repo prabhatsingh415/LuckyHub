@@ -13,12 +13,14 @@ import com.LuckyHub.Backend.model.WinnerRequest;
 import com.LuckyHub.Backend.model.WinnerResponse;
 import com.LuckyHub.Backend.repository.GiveawayHistoryRepository;
 import com.LuckyHub.Backend.repository.SubscriptonRepository;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -28,12 +30,14 @@ public class WinnerServiceImpl implements WinnerService {
     private final UserService userService;
     private final SubscriptonRepository subscriptionRepository;
     private final GiveawayHistoryService giveawayHistoryService;
+    private final CacheManager cacheManager;
 
-    public WinnerServiceImpl(VideoService videoService, UserService userService, SubscriptonRepository subscriptonRepository, GiveawayHistoryRepository giveawayHistoryRepository, GiveawayHistoryService giveawayHistoryService) {
+    public WinnerServiceImpl(VideoService videoService, UserService userService, SubscriptonRepository subscriptonRepository, GiveawayHistoryRepository giveawayHistoryRepository, GiveawayHistoryService giveawayHistoryService, CacheManager cacheManager) {
         this.videoService = videoService;
         this.userService = userService;
         this.subscriptionRepository = subscriptonRepository;
         this.giveawayHistoryService = giveawayHistoryService;
+        this.cacheManager = cacheManager;
     }
 
     @Override
@@ -82,6 +86,10 @@ public class WinnerServiceImpl implements WinnerService {
                 .build();
 
         giveawayHistoryService.saveHistory(giveawayHistory);
+
+        if (cacheManager.getCache("dashboardCache") != null) {
+            Objects.requireNonNull(cacheManager.getCache("dashboardCache")).evict(email);
+        }
 
         return new WinnerResponse(
                 winners
