@@ -12,6 +12,8 @@
   "dependencies": {
     "@reduxjs/toolkit": "^2.9.0",
     "@tailwindcss/vite": "^4.1.13",
+    "canvas-confetti": "^1.9.4",
+    "framer-motion": "^12.23.26",
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",

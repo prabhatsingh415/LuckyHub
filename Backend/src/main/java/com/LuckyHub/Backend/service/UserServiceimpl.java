@@ -271,11 +271,9 @@ public class UserServiceimpl implements UserService{
     @Override
     @Cacheable(value = "dashboardCache", key = "#email")
     public Map<String, Object> getCurrentUserFromToken(String token, String email) {
-        // 1. Fetch user from DB (optional: ensures latest data)
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        // 2. Prepare response map
         Map<String, Object> response = new HashMap<>();
 
         Subscription sub = user.getSubscription();

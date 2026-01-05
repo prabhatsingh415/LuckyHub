@@ -61,10 +61,13 @@ function Dashboard() {
       />
     );
   }
-  const used = data?.user?.winnersSelectedThisMonth || 0;
-  const total = data?.user?.maxGiveaways;
-  const remaining = data?.user?.remainingGiveaways;
-  const percent = Math.round((used / total) * 100);
+
+  const remaining = data?.user?.remainingGiveaways || 0;
+  const used = Number(data?.user?.winnersSelectedThisMonth) || 0;
+  const total = Number(data?.user?.maxGiveaways) || 0;
+
+  const percent =
+    total > 0 ? Math.min(Math.round((used / total) * 100), 100) : 0;
 
   return (
     <div className="w-full dark:bg-[#0a0a0a] flex flex-col justify-center p-4 gap-8 dark:text-white">
@@ -191,8 +194,8 @@ function Dashboard() {
           {/* Progress Bar */}
           <div className="w-full h-2 bg-gray-300 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
-              className="h-2 bg-black dark:bg-white"
-              style={{ width: percent + "%" }}
+              className="h-2 bg-black dark:bg-white transition-all duration-300"
+              style={{ width: `${percent}%` }}
             ></div>
           </div>
 

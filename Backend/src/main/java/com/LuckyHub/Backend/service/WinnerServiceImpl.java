@@ -13,6 +13,8 @@ import com.LuckyHub.Backend.model.WinnerRequest;
 import com.LuckyHub.Backend.model.WinnerResponse;
 import com.LuckyHub.Backend.repository.GiveawayHistoryRepository;
 import com.LuckyHub.Backend.repository.SubscriptonRepository;
+import com.LuckyHub.Backend.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
@@ -31,54 +33,59 @@ public class WinnerServiceImpl implements WinnerService {
     private final SubscriptonRepository subscriptionRepository;
     private final GiveawayHistoryService giveawayHistoryService;
     private final CacheManager cacheManager;
+    private final UserRepository userRepository;
 
-    public WinnerServiceImpl(VideoService videoService, UserService userService, SubscriptonRepository subscriptonRepository, GiveawayHistoryRepository giveawayHistoryRepository, GiveawayHistoryService giveawayHistoryService, CacheManager cacheManager) {
+    public WinnerServiceImpl(VideoService videoService, UserService userService, SubscriptonRepository subscriptonRepository, GiveawayHistoryRepository giveawayHistoryRepository, GiveawayHistoryService giveawayHistoryService, CacheManager cacheManager, UserRepository userRepository) {
         this.videoService = videoService;
         this.userService = userService;
         this.subscriptionRepository = subscriptonRepository;
         this.giveawayHistoryService = giveawayHistoryService;
         this.cacheManager = cacheManager;
+        this.userRepository = userRepository;
     }
 
+    @Transactional
     @Override
     public WinnerResponse findWinner(WinnerRequest request, String email) {
 
-         if(!videoService.verifySameUser(request.getVideoLinks())) // verify all url are of same YOUTUBE channel
-              throw new VideosFromDifferentChannelsException("All provided videos must be from the same channel.");
-
-        Optional<User> user = userService.findUserByEmail(email);   //find the user to get plan details
-
-        if(user.isEmpty())throw new UserNotFoundException("user not found, please try login !");
-
-        Subscription subscription = user.get().getSubscription();
-        SubscriptionTypes plan = subscription.getSubscriptionType(); //get plan
-
-        //Check the request is within the limit or not ?
-        if(plan.getMaxWinners() < request.getNumberOfWinners()){
-            throw new PlanLimitExceedException("Number of winners requested exceeds the limit for your subscription plan.");
+        if (!videoService.verifySameUser(request.getVideoLinks())) {
+            throw new VideosFromDifferentChannelsException("All provided videos must be from the same channel.");
         }
+
+        User user = userService.findUserByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found, please try login!"));
+
+        Subscription subscription = user.getSubscription();
 
         if (subscription.getSubscriptionType() != SubscriptionTypes.DIAMOND) {
             if (subscription.getRemainingGiveaways() <= 0) {
-                throw new PlansGiveawayLimitExceedException("You have reached your monthly giveaway limit. Upgrade to get more!");
+                throw new PlansGiveawayLimitExceedException("You have reached your monthly limit!");
             }
+        }
+
+        if (subscription.getSubscriptionType().getMaxWinners() < request.getNumberOfWinners()) {
+            throw new PlanLimitExceedException("Winners exceed your plan limit.");
+        }
+
+        List<Comment> fetchedComments = videoService.fetchComments(request.getVideoLinks(), request.getKeyword(), subscription.getSubscriptionType());
+        List<Comment> winners = videoService.selectWinner(fetchedComments, request.getNumberOfWinners());
+
+        if (winners.isEmpty()) {
+            return new WinnerResponse(winners);
+        }
+
+        if (subscription.getSubscriptionType() != SubscriptionTypes.DIAMOND) {
             subscription.setRemainingGiveaways(subscription.getRemainingGiveaways() - 1);
             subscriptionRepository.save(subscription);
         }
 
+        user.setWinnersSelectedThisMonth(user.getWinnersSelectedThisMonth() + 1);
+        userRepository.save(user);
 
-        //fetch the comments
-        List<Comment> fetchedComments = videoService.fetchComments(request.getVideoLinks(), request.getKeyword(), plan);
+        List<String> winnerNames = winners.stream().map(Comment::getAuthorName).toList();
 
-        List<Comment> winners = videoService.selectWinner(fetchedComments,request.getNumberOfWinners());
-
-        List<String> winnerNames = winners.stream()
-                .map(Comment::getAuthorName)
-                .toList();
-
-
-        GiveawayHistory giveawayHistory = GiveawayHistory
-                .builder()
+        GiveawayHistory giveawayHistory = GiveawayHistory.builder()
+                .userId(user.getId())
                 .commentCount(fetchedComments.size())
                 .winnersCount(winners.size())
                 .winners(winnerNames)
@@ -89,10 +96,7 @@ public class WinnerServiceImpl implements WinnerService {
 
         if (cacheManager.getCache("dashboardCache") != null) {
             Objects.requireNonNull(cacheManager.getCache("dashboardCache")).evict(email);
-        }
-
-        return new WinnerResponse(
-                winners
-        );
+        } 
+        return new WinnerResponse(winners);
     }
 }

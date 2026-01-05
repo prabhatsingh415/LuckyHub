@@ -21,7 +21,7 @@ public class RateLimiterService {
         String date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
         String key = "rate:" + endpoint + ":" + userId + ":" + date;
 
-        // Bucket config (only created if key doesn't exist)
+        // Bucket config
         Supplier<BucketConfiguration> configSupplier = () -> {
             Bandwidth dailyLimit = Bandwidth.classic(
                     maxAttemptsPerDay,
