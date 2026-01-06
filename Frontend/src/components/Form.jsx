@@ -28,16 +28,12 @@ export default function Form({
     e.preventDefault();
 
     if (showCheckMark && !isChecked) {
-      if (showCheckMark && !isChecked) {
-        setModalOpen(true);
-        return;
-      }
+      setModalOpen(true);
+      return;
     }
 
     if (onSubmit) {
-      const formData = new FormData(e.target);
-      const data = Object.fromEntries(formData.entries());
-      onSubmit(data);
+      onSubmit(e);
     }
   };
 
@@ -261,6 +257,7 @@ export default function Form({
         title="Action Required ⚠️"
         message="Please agree to the Terms and Privacy Policy before continuing."
         okText="Got it"
+        isContainsResendBtn={false}
         onOk={() => setModalOpen(false)}
       />
     </form>

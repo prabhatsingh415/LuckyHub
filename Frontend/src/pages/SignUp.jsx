@@ -6,7 +6,6 @@ import { Lock, Mail, User } from "lucide-react";
 import { useSignUpMutation } from "../Redux/slices/apiSlice";
 import Loader from "./Loader";
 import InfoModal from "./InfoModal";
-import { useEffect } from "react";
 
 function SignUp() {
   const theme = useSelector((state) => state.theme.mode);
@@ -71,7 +70,7 @@ function SignUp() {
     },
     {
       label: "Password",
-      type: "text",
+      type: "password",
       icon: (
         <Lock
           size={18}
@@ -81,7 +80,18 @@ function SignUp() {
       placeholder: "Create a password",
       register: register("password", {
         required: "Password is required",
-        message: "Invalid Password",
+        minLength: {
+          value: 6,
+          message: "Password must be at least 6 characters",
+        },
+        maxLength: {
+          value: 30,
+          message: "Password must be less than 30 characters",
+        },
+        pattern: {
+          value: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$/,
+          message: "Password must contain letters and numbers",
+        },
       }),
     },
   ];
@@ -98,16 +108,9 @@ function SignUp() {
     signUpData(formValues);
   };
 
-  useEffect(() => {
-    console.table({
-      isLoading: isLoading,
-      isSuccess: isSuccess,
-      isError: isError,
-      "error.status": error?.status,
-      "data?": !!data,
-    });
-  }, [isLoading, isSuccess, isError, error, data]);
-
+  {
+    data && localStorage.setItem("SignUpToken", data.token);
+  }
   return (
     <div className="w-full flex flex-col  md:mt-32 md:ml-5 lg:mt-0 lg:ml-0 justify-center items-center dark:text-white">
       {/* Loader */}
@@ -118,7 +121,7 @@ function SignUp() {
           isOpen={true}
           type="success"
           title="Account Created 🎉"
-          message="Verification email has been sent. Please check your inbox!"
+          message="Signed Up successfully !"
           okText="Go to Gmail"
           redirectUrl="https://mail.google.com/"
           onOk={() => reset()}
@@ -130,6 +133,7 @@ function SignUp() {
           isOpen={true}
           type="error"
           title="Signup Failed"
+          isContainsResendBtn={false}
           message={
             error?.data?.message || "Something went wrong, please try again."
           }

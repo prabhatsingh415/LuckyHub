@@ -125,8 +125,11 @@ public class UserController {
     public ResponseEntity<?> login(@RequestBody UserModel userModel) {
 
         String email = userModel.getEmail();
-        long userId = userService.findUserIdByEmail(email);
-        // Max Limit 8 times a day
+        Long userId = userService.findUserIdByEmail(email);
+
+        if(null == userId)throw new UserNotFoundException("Invalid email or password");
+
+        // Max Limit 20 times a day
         if(!rateLimiterService.tryConsume("login", userId, 20)){
             throw new MaximumLimitReachedException("You have reached the maximum limit for logging in. Please try again after 24 hours.");
         }

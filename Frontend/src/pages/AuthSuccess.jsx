@@ -8,13 +8,11 @@ export default function AuthSuccess() {
     localStorage.setItem("isSignIn", "true");
     window.dispatchEvent(new Event("storage"));
 
-    // pehle navigate karo
     navigate("/home", { replace: true });
 
-    // fir reload karao thoda delay deke (React ko navigate complete karne ka time mile)
     setTimeout(() => {
       window.location.reload();
-    }, 500); // half second delay is enough
+    }, 500);
   }, [navigate]);
 
   return (
