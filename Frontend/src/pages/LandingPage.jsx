@@ -1,4 +1,3 @@
-import React from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import MainContent from "../components/landing/HeroSection";
@@ -13,9 +12,19 @@ function LandingPage() {
       <Header />
       <MainContent />
       <WorkingSection />
-      <FeaturesSection />
-      <Subscription />
-      <CTASection />
+      <div id="features">
+        <FeaturesSection />
+      </div>
+
+      {/* 2. Add id="pricing" to match Header ScrollLink */}
+      <div id="pricing">
+        <Subscription />
+      </div>
+
+      {/* 3. If you have an FAQ section inside CTA or Footer, wrap it too */}
+      <div id="faq">
+        <CTASection />
+      </div>
       <Footer />
     </>
   );

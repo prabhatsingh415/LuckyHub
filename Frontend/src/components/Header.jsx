@@ -25,7 +25,7 @@ function Header() {
           to="pricing"
           smooth={true}
           duration={500}
-          offset={-70}
+          offset={60}
           className="hover:text-[var(--orange)] cursor-pointer"
         >
           Pricing
