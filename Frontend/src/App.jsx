@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import {
   createBrowserRouter,
   RouterProvider,
@@ -20,37 +20,49 @@ import AppLayout from "./components/layout/AppLayout";
 import Dashboard from "./components/layout/Dashboard";
 import Settings from "./components/layout/Settings";
 import Home from "./components/layout/Home";
+import { useDashboardAPIQuery } from "./Redux/slices/apiSlice";
+import { setAuth, logout } from "./Redux/slices/authSlice";
 
 import "./App.css";
 
 function App() {
+  const dispatch = useDispatch();
   const theme = useSelector((state) => state.theme.mode);
   const loader = useSelector((state) => state.loader.showLoader);
-  const [isSignIn, setIsSignIn] = useState(
-    localStorage.getItem("isSignIn") === "true"
+
+  const { isAuthenticated, isCheckingAuth } = useSelector(
+    (state) => state.userDetails
   );
+
+  const {
+    data: userData,
+    isLoading: isApiLoading,
+    isError,
+  } = useDashboardAPIQuery();
+
+  useEffect(() => {
+    if (userData) {
+      dispatch(setAuth({ isAuthenticated: true, user: userData }));
+    } else if (isError) {
+      dispatch(logout());
+    }
+  }, [userData, isError, dispatch]);
 
   // Theme toggle
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
 
-  // Sync sign-in status across tabs
-  useEffect(() => {
-    const handleStorageChange = () => {
-      setIsSignIn(localStorage.getItem("isSignIn") === "true");
-      const cookies = document.cookie;
-    };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+  if (isApiLoading || isCheckingAuth) {
+    return <Loader />;
+  }
 
   // Wrapper Components for clean route protection
   const ProtectedRoute = ({ element }) =>
-    isSignIn ? element : <Navigate to="/" replace />;
+    isAuthenticated ? element : <Navigate to="/" replace />;
 
   const PublicRoute = ({ element }) =>
-    !isSignIn ? element : <Navigate to="/home" replace />;
+    !isAuthenticated ? element : <Navigate to="/home" replace />;
 
   const router = createBrowserRouter([
     { path: "/", element: <PublicRoute element={<LandingPage />} /> },
