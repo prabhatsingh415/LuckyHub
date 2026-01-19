@@ -5,11 +5,7 @@ export default function AuthSuccess() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    localStorage.setItem("isSignIn", "true");
-    window.dispatchEvent(new Event("storage"));
-
     navigate("/home", { replace: true });
-
     setTimeout(() => {
       window.location.reload();
     }, 500);

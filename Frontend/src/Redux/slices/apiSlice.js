@@ -58,6 +58,9 @@ export const apiSlice = createApi({
       query: () => ({
         url: "/user/me",
         method: "GET",
+        keepUnusedDataFor: 300, // keep cache for 5 minutes
+        refetchOnFocus: false,
+        refetchOnReconnect: false,
       }),
     }),
     History: builder.query({
