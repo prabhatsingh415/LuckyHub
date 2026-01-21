@@ -8,6 +8,7 @@ import com.LuckyHub.Backend.model.LastPaymentModel;
 import com.LuckyHub.Backend.model.PaymentStatus;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.repository.PaymentRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,7 @@ import java.time.LocalDateTime;
         }
 
     @Override
+    @Transactional
         public Payment createPartialPayment(Long userId, SubscriptionTypes planType, BigDecimal amount, String currency, String orderId, String receiptId) {
             Payment payment = new Payment();
             payment.setUserId(userId);
@@ -41,6 +43,7 @@ import java.time.LocalDateTime;
         }
 
         @Override
+        @Transactional
         public Payment completePayment(String orderId, String paymentId, boolean signatureVerified, LocalDateTime paymentDate) {
             Payment payment = paymentRepo.findByOrderId(orderId)
                     .orElseThrow(() -> new PaymentNotFoundException("Payment record not found " + orderId));

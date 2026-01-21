@@ -8,7 +8,7 @@ public interface SubscriptionService {
 
     SubscriptionTypes getPlanByAmount(int subAmount);
 
-    Long getUserId(HttpServletRequest request);
-
     Object getUserSubscription(String email);
+
+    void upgradeSubscription(String paymentId);
 }

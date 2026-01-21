@@ -1,11 +1,9 @@
 package com.LuckyHub.Backend.controller;
 
-import com.LuckyHub.Backend.entity.Payment;
+
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.exception.InvalidAmountForAnyPlanException;
-import com.LuckyHub.Backend.exception.PaymentNotFoundException;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
-import com.LuckyHub.Backend.model.LastPaymentModel;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.service.JWTService;
 import com.LuckyHub.Backend.service.PaymentService;
@@ -52,67 +50,50 @@ public class SubscriptionController {
     @Value("${Razorpay_key_secret}")
     private String secret;
 
-    @PostMapping("/proceed")
-    public ResponseEntity<?> proceedPayment(HttpServletRequest request, @RequestBody Map<String, Object> data) throws RazorpayException {
+    @PostMapping("/createOrder")
+    public ResponseEntity<?> proceedPayment(HttpServletRequest request, @RequestBody Map<String, String> data) throws RazorpayException {
 
-        BigDecimal subAmount;
+        String planName = data.get("planName").toUpperCase(); // e.g., "GOLD" or "DIAMOND"
+
+        SubscriptionTypes planType;
         try {
-            Object amountObj = data.get("amount");
-            if(amountObj == null) throw new InvalidAmountForAnyPlanException("Amount is required");
-            subAmount = new BigDecimal(amountObj.toString());
-        } catch (NumberFormatException e) {
-            throw new InvalidAmountForAnyPlanException("Invalid amount format");
+            planType = SubscriptionTypes.valueOf(planName);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Invalid Plan Name!"));
         }
 
-
-        if(!subscriptionService.verifyTheAmount(subAmount.intValue())) {
-            throw new InvalidAmountForAnyPlanException("The given amount didn't match with any plan!");
-        }
-
+        int subAmount = planType.getPrice();
 
         RazorpayClient razorpayClient = new RazorpayClient(key, secret);
+        Long userId = userService.getUserIdByRequest(request);
 
-
-        Long userId = subscriptionService.getUserId(request);
-        if(userId == null) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("status", "error", "message", "User Not Found!"));
-        }
-
+        if(userId == null) return ResponseEntity.status(500).body(Map.of("message", "User Not Found!"));
 
         String receiptId = "LHN_" + userId + "_" + LocalDate.now();
-
-
         JSONObject obj = new JSONObject();
-        obj.put("amount", subAmount.multiply(BigDecimal.valueOf(100)).longValue()); // in paise
+        obj.put("amount", subAmount * 100);
         obj.put("currency", "INR");
         obj.put("receipt", receiptId);
 
         Order order = razorpayClient.orders.create(obj);
 
-        SubscriptionTypes planType = subscriptionService.getPlanByAmount(subAmount.intValue());
+        paymentService.createPartialPayment(userId, planType, BigDecimal.valueOf(subAmount), "INR", order.get("id"), receiptId);
 
-        paymentService.createPartialPayment(userId, planType, subAmount, "INR", order.get("id"), receiptId);
-
-        return ResponseEntity.ok(
-                Map.of(
-                        "status", "success",
-                        "orderId", order.get("id"),
-                        "amount", subAmount,
-                        "currency", "INR",
-                        "message","Order created successfully!"
-                )
-        );
+        return ResponseEntity.ok(Map.of(
+                "orderId", order.get("id"),
+                "amount", subAmount,
+                "currency", "INR"
+        ));
     }
 
 
-    @PostMapping("/verify")
+    @PostMapping("/verifyPayment")
     public ResponseEntity<?> verifyPayment(HttpServletRequest request, @RequestBody Map<String, Object> data) {
 
-        Long userId = subscriptionService.getUserId(request);
+        Long userId = userService.getUserIdByRequest(request);
         Optional<User> user = userService.getUserById(userId);
 
-        if (user.isEmpty()) throw new UserNotFoundException("User Not Found For Given Id");
+        if (user.isEmpty()) throw new UserNotFoundException("User Not Found!");
 
         try {
             String orderId = data.get("razorpay_order_id").toString();
@@ -132,7 +113,7 @@ public class SubscriptionController {
             if (expectedSignature.equals(signature)) {
                 // Payment verified successfully
                 paymentService.completePayment(orderId, paymentId, true, LocalDateTime.now());
-                userService.upgradeSubscription(paymentId);
+                subscriptionService.upgradeSubscription(paymentId);
 
                 return ResponseEntity.ok(Map.of(
                         "status", "success",
