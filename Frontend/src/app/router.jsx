@@ -15,17 +15,24 @@ import PrivacyPolicy from "../pages/PrivacyPolicy";
 import ForgotPassword from "../pages/ForgotPassword";
 import ResetPassword from "../pages/ResetPassword";
 import AuthSuccess from "../pages/AuthSuccess";
+import UpgradePlan from "../pages/UpgradePlan.jsx";
+import Support from "../pages/Support.jsx";
 
 export const router = createBrowserRouter([
   { path: "/", element: <PublicRoute element={<LandingPage />} /> },
   { path: "/signup", element: <PublicRoute element={<SignUp />} /> },
   { path: "/signin", element: <PublicRoute element={<SignIn />} /> },
   { path: "/verify_user", element: <VerifyUserPage /> },
-  { path: "/terms-of-condition", element: <TermsOfService /> },
+  { path: "/terms-of-service", element: <TermsOfService /> },
   { path: "/privacy-policy", element: <PrivacyPolicy /> },
   { path: "/signIn/forgot-password", element: <ForgotPassword /> },
   { path: "/reset-password", element: <ResetPassword /> },
   { path: "/auth-success", element: <AuthSuccess /> },
+  { path: "/support", element: <Support /> },
+  {
+    path: "/upgrade-plan",
+    element: <ProtectedRoute element={<UpgradePlan />} />,
+  },
   {
     element: <AppLayout />,
     children: [
