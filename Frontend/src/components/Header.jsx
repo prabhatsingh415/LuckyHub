@@ -43,7 +43,7 @@ function Header() {
           to="faq"
           smooth={true}
           duration={500}
-          offset={-70}
+          offset={55}
           className="hover:text-[var(--orange)] cursor-pointer"
         >
           FAQ's

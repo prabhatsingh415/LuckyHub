@@ -5,6 +5,7 @@ import WorkingSection from "../components/landing/WorkingSection";
 import FeaturesSection from "../components/landing/FeaturesSection";
 import Subscription from "../components/landing/Subscription";
 import CTASection from "../components/landing/CTASection";
+import FAQ from "../components/landing/FAQ";
 
 function LandingPage() {
   return (
@@ -16,15 +17,14 @@ function LandingPage() {
         <FeaturesSection />
       </div>
 
-      {/* 2. Add id="pricing" to match Header ScrollLink */}
       <div id="pricing">
         <Subscription />
       </div>
 
-      {/* 3. If you have an FAQ section inside CTA or Footer, wrap it too */}
       <div id="faq">
-        <CTASection />
+        <FAQ />
       </div>
+      <CTASection />
       <Footer />
     </>
   );
