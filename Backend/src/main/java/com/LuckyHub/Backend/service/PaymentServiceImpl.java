@@ -22,10 +22,12 @@ import java.time.LocalDateTime;
 
         private final PaymentRepository paymentRepo;
         private final UserService userService;
+        private final SubscriptionService subscriptionService;
 
-        public PaymentServiceImpl(PaymentRepository paymentRepo, @Lazy UserService userService) {
+        public PaymentServiceImpl(PaymentRepository paymentRepo, @Lazy UserService userService, SubscriptionService subscriptionService) {
             this.paymentRepo = paymentRepo;
             this.userService = userService;
+            this.subscriptionService = subscriptionService;
         }
 
     @Override
@@ -52,8 +54,9 @@ import java.time.LocalDateTime;
             payment.setSignatureVerified(signatureVerified);
             payment.setPaymentDate(paymentDate);
             payment.setStatus(signatureVerified ? PaymentStatus.SUCCESS : PaymentStatus.FAILED);
-
-            return paymentRepo.save(payment);
+            paymentRepo.save(payment);
+            subscriptionService.upgradeSubscription(payment);
+            return payment;
         }
 
         @Override

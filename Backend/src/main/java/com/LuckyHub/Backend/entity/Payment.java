@@ -16,7 +16,7 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private Long userId;
 
     @Column(nullable = false)
@@ -32,20 +32,17 @@ public class Payment {
     @Column(nullable = false, unique = true)
     private String orderId;
 
-    @Column(nullable = true, unique = true)
+    @Column(unique = true)
     private String paymentId;
 
-    @Column(nullable = true)
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
 
     @Column(nullable = false, unique = true)
     private String receiptId;
 
-    @Column(nullable = true)
     private boolean signatureVerified;
 
-    @Column(nullable = true)
     private LocalDateTime paymentDate;
 
     private String method;

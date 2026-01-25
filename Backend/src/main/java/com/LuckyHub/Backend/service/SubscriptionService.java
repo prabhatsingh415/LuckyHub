@@ -1,7 +1,7 @@
 package com.LuckyHub.Backend.service;
 
+import com.LuckyHub.Backend.entity.Payment;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
-import jakarta.servlet.http.HttpServletRequest;
 
 public interface SubscriptionService {
     boolean verifyTheAmount(int subAmount);
@@ -10,5 +10,5 @@ public interface SubscriptionService {
 
     Object getUserSubscription(String email);
 
-    void upgradeSubscription(String paymentId);
+    void upgradeSubscription(Payment payment);
 }

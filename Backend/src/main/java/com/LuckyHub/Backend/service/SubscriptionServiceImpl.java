@@ -7,8 +7,8 @@ import com.LuckyHub.Backend.exception.UserNotFoundException;
 import com.LuckyHub.Backend.model.SubscriptionStatus;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.repository.UserRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -18,15 +18,14 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
 
+@Slf4j
 @Service
 public class SubscriptionServiceImpl implements SubscriptionService {
 
     private final UserRepository userRepository;
-    private final PaymentService paymentService;
     private final CacheManager cacheManager;
-    public SubscriptionServiceImpl(UserRepository userRepository, PaymentService paymentService, CacheManager cacheManager) {
+    public SubscriptionServiceImpl(UserRepository userRepository, CacheManager cacheManager) {
         this.userRepository = userRepository;
-        this.paymentService = paymentService;
         this.cacheManager = cacheManager;
     }
 
@@ -88,11 +87,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional
-//    @CacheEvict(value = "dashboardCache", allEntries = false, key = "#paymentId.transform(@paymentService::getUserIdByPaymentId).transform(@userService::getEmailById)")
-    public void upgradeSubscription(String paymentId) {
+    @CacheEvict(value = "dashboardCache", key = "#payment.paymentId.transform(@paymentService::getUserIdByPaymentId).transform(@userService::getEmailById)")
+    public void upgradeSubscription(Payment payment) {
         // fetching payment data
-        Payment payment = paymentService.getPaymentDataToUpgradeService(paymentId);
-
         Long userId = payment.getUserId();
         SubscriptionTypes planType = payment.getPlanType();
 
@@ -122,7 +119,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             subscription.setStartDate(startDate);
             subscription.setExpiringDate(expiringDate);
             subscription.setStatus(status);
-            subscription.setPaymentId(paymentId);
+            subscription.setPaymentId(payment.getPaymentId());
             subscription.setMaxComments(maxComments);
             subscription.setMaxWinners(maxWinners);
             subscription.setRemainingGiveaways(remainingGiveaways);
@@ -133,7 +130,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                     .startDate(startDate)
                     .expiringDate(expiringDate)
                     .status(status)
-                    .paymentId(paymentId)
+                    .paymentId(payment.getPaymentId())
                     .maxComments(maxComments)
                     .maxWinners(maxWinners)
                     .remainingGiveaways(remainingGiveaways)
@@ -143,7 +140,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         }
 
         userRepository.save(user); // updating the user with updated/new subscription
-
+        log.info("Plan upgraded successfully for {}", user.getEmail());
         if (cacheManager.getCache("dashboardCache") != null) {
             Objects.requireNonNull(cacheManager.getCache("dashboardCache")).evict(user.getEmail());
         }

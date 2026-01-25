@@ -3,6 +3,7 @@ package com.LuckyHub.Backend.controller;
 
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.exception.InvalidAmountForAnyPlanException;
+import com.LuckyHub.Backend.exception.SubscriptionDowngradeException;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.service.JWTService;
@@ -28,6 +29,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/subscription")
@@ -53,23 +55,34 @@ public class SubscriptionController {
     @PostMapping("/createOrder")
     public ResponseEntity<?> proceedPayment(HttpServletRequest request, @RequestBody Map<String, String> data) throws RazorpayException {
 
-        String planName = data.get("planName").toUpperCase(); // e.g., "GOLD" or "DIAMOND"
+        Long userId = userService.getUserIdByRequest(request);
+        User user = userService.getUserById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found!"));
 
-        SubscriptionTypes planType;
+        SubscriptionTypes currPlan = (user.getSubscription() != null)
+                ? user.getSubscription().getSubscriptionType()
+                : SubscriptionTypes.FREE;
+
+        String planName = data.get("planName").toUpperCase();
+        SubscriptionTypes requestedPlan;
         try {
-            planType = SubscriptionTypes.valueOf(planName);
+            requestedPlan = SubscriptionTypes.valueOf(planName);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", "Invalid Plan Name!"));
         }
 
-        int subAmount = planType.getPrice();
+        if (requestedPlan.getPrice() <= currPlan.getPrice()) {
+            if (currPlan == SubscriptionTypes.DIAMOND) {
+                throw new SubscriptionDowngradeException("You are already on the Max Tier!");
+            }
+            throw new SubscriptionDowngradeException("Downgrade or re-purchase of " + currPlan + " is not allowed!");
+        }
+
+        int subAmount = requestedPlan.getPrice();
 
         RazorpayClient razorpayClient = new RazorpayClient(key, secret);
-        Long userId = userService.getUserIdByRequest(request);
 
-        if(userId == null) return ResponseEntity.status(500).body(Map.of("message", "User Not Found!"));
-
-        String receiptId = "LHN_" + userId + "_" + LocalDate.now();
+        String receiptId = "LHN_" + userId + "_" + System.currentTimeMillis();
         JSONObject obj = new JSONObject();
         obj.put("amount", subAmount * 100);
         obj.put("currency", "INR");
@@ -77,7 +90,7 @@ public class SubscriptionController {
 
         Order order = razorpayClient.orders.create(obj);
 
-        paymentService.createPartialPayment(userId, planType, BigDecimal.valueOf(subAmount), "INR", order.get("id"), receiptId);
+        paymentService.createPartialPayment(userId, requestedPlan, BigDecimal.valueOf(subAmount), "INR", order.get("id"), receiptId);
 
         return ResponseEntity.ok(Map.of(
                 "orderId", order.get("id"),
@@ -113,7 +126,6 @@ public class SubscriptionController {
             if (expectedSignature.equals(signature)) {
                 // Payment verified successfully
                 paymentService.completePayment(orderId, paymentId, true, LocalDateTime.now());
-                subscriptionService.upgradeSubscription(paymentId);
 
                 return ResponseEntity.ok(Map.of(
                         "status", "success",
