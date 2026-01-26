@@ -9,7 +9,9 @@ import com.LuckyHub.Backend.model.PaymentStatus;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
 import com.LuckyHub.Backend.repository.PaymentRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -55,6 +57,11 @@ import java.time.LocalDateTime;
             payment.setPaymentDate(paymentDate);
             payment.setStatus(signatureVerified ? PaymentStatus.SUCCESS : PaymentStatus.FAILED);
             paymentRepo.save(payment);
+            paymentRepo.deleteByUserIdAndStatusAndIdNot(
+                    payment.getUserId(),
+                    PaymentStatus.SUCCESS,
+                    payment.getId()
+            );
             subscriptionService.upgradeSubscription(payment);
             return payment;
         }
@@ -91,6 +98,14 @@ import java.time.LocalDateTime;
                 .periodEnd(endDate)
                 .nextBillingDate(endDate)
                 .build();
+    }
+
+    @Scheduled(cron = "0 0 * * * *")
+    public void cleanJunk() {
+        LocalDateTime threshold = LocalDateTime.now().minusHours(24);
+
+        paymentRepo.deleteByStatusAndCreatedAtBefore(PaymentStatus.PENDING, threshold);
+        paymentRepo.deleteByStatusAndCreatedAtBefore(PaymentStatus.FAILED, threshold);
     }
 }
 

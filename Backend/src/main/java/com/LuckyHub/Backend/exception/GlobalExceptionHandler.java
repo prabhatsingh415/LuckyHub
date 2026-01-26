@@ -143,6 +143,7 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(ImageUploadFailedException.class)
     public ResponseEntity<Map<String, String>> handlesImageUploadExceptionFailed(ImageUploadFailedException ex){
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of(
@@ -151,6 +152,7 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(PasswordMismatchException.class)
     public ResponseEntity<Map<String, String>> handlePasswordMismatchException(PasswordMismatchException ex){
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of(
@@ -159,6 +161,7 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(InvalidCurrentPasswordException.class)
     public ResponseEntity<Map<String, String>> handleInvalidCurrentPasswordException(InvalidCurrentPasswordException ex){
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of(
@@ -175,5 +178,15 @@ public class GlobalExceptionHandler {
                         "message", ex.getMessage()
                 ));
     }
+
+    @ExceptionHandler(SubscriptionDowngradeException.class)
+    public ResponseEntity<Map<String, String>> handleSubscriptionDowngradeException(Exception ex){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "error", "Something went wrong",
+                        "message", ex.getMessage()
+                ));
+    }
+
 
 }

@@ -87,7 +87,6 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "dashboardCache", key = "#payment.paymentId.transform(@paymentService::getUserIdByPaymentId).transform(@userService::getEmailById)")
     public void upgradeSubscription(Payment payment) {
         // fetching payment data
         Long userId = payment.getUserId();
@@ -108,7 +107,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         Optional<User> optUser = userRepository.findUserById(userId);
 
         if (optUser.isEmpty())
-            throw new UserNotFoundException("optUser not found, unable to upgrade Subscription !");
+            throw new UserNotFoundException("User not found!");
 
         User user = optUser.get();
         Subscription subscription = user.getSubscription();
@@ -141,6 +140,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         userRepository.save(user); // updating the user with updated/new subscription
         log.info("Plan upgraded successfully for {}", user.getEmail());
+
         if (cacheManager.getCache("dashboardCache") != null) {
             Objects.requireNonNull(cacheManager.getCache("dashboardCache")).evict(user.getEmail());
         }

@@ -52,7 +52,7 @@ public class RedisConfig {
                                 new GenericJackson2JsonRedisSerializer()
                         )
                 )
-                .entryTtl(Duration.ofDays(7))
+                .entryTtl(Duration.ofDays(1))
                 .disableCachingNullValues();
 
         Map<String, RedisCacheConfiguration> cacheConfigs = new HashMap<>();
