@@ -107,12 +107,11 @@ public class SubscriptionController {
         Optional<User> user = userService.getUserById(userId);
 
         if (user.isEmpty()) throw new UserNotFoundException("User Not Found!");
-
+        String orderId = "";
         try {
-            String orderId = data.get("razorpay_order_id").toString();
+            orderId  = data.get("razorpay_order_id").toString();
             String paymentId = data.get("razorpay_payment_id").toString();
             String signature = data.get("razorpay_signature").toString();
-
             String payload = orderId + "|" + paymentId;
 
             // HMAC SHA256 using Razorpay secret
@@ -132,6 +131,7 @@ public class SubscriptionController {
                         "message", "Payment verified successfully!"
                 ));
             } else {
+                paymentService.markPaymentFailed(orderId);
                 return ResponseEntity.badRequest().body(Map.of(
                         "status", "failed",
                         "message", "Payment verification failed!"
@@ -139,6 +139,9 @@ public class SubscriptionController {
             }
 
         } catch (Exception e) {
+            if (orderId != null && !orderId.isEmpty()) {
+                paymentService.markPaymentFailed(orderId);
+            }
             return ResponseEntity.internalServerError().body(Map.of(
                     "status", "error",
                     "message", e.getMessage()

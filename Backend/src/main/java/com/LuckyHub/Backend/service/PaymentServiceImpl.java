@@ -100,6 +100,16 @@ import java.time.LocalDateTime;
                 .build();
     }
 
+    @Override
+    @Transactional
+    public void markPaymentFailed(String orderId) {
+        Payment payment = paymentRepo.findByOrderId(orderId)
+                .orElseThrow(() -> new PaymentNotFoundException("Payment not found for Order ID: " + orderId));
+
+        payment.setStatus(PaymentStatus.FAILED);
+        paymentRepo.save(payment);
+    }
+
     @Scheduled(cron = "0 0 * * * *")
     public void cleanJunk() {
         LocalDateTime threshold = LocalDateTime.now().minusHours(24);

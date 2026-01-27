@@ -16,4 +16,7 @@ public interface PaymentService {
     Payment getPaymentDataToUpgradeService(String paymentId);
 
     LastPaymentModel getLastPayment(String email);
+
+    void markPaymentFailed(String orderId);
 }
+
