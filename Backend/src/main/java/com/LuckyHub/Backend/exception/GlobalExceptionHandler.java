@@ -170,15 +170,6 @@ public class GlobalExceptionHandler {
                 ));
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                        "error", "Something went wrong",
-                        "message", ex.getMessage()
-                ));
-    }
-
     @ExceptionHandler(SubscriptionDowngradeException.class)
     public ResponseEntity<Map<String, String>> handleSubscriptionDowngradeException(Exception ex){
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -188,5 +179,22 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(PaymentGatewayException.class)
+    public ResponseEntity<Map<String, String>> handlePaymentGatewayException(Exception ex){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "error", "Something went wrong",
+                        "message", ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                        "error", "Something went wrong",
+                        "message", ex.getMessage()
+                ));
+    }
 
 }

@@ -43,8 +43,6 @@ public interface UserService {
 
     Optional<User> getUserById(Long id);
 
-    void upgradeSubscription(String paymentId);
-
     UserModel convertToUserModel(User user);
 
     boolean changeUserName(String email, ChangeNameRequest request);
@@ -52,4 +50,8 @@ public interface UserService {
     void changeAvatar(String email, MultipartFile file);
 
     void updatePassword(String email, ChangePasswordModel changePasswordModel);
+
+    Long getUserIdByRequest(HttpServletRequest request);
+
+    User findUserByUserId(Long userId);
 }

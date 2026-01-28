@@ -305,7 +305,7 @@ public class UserController {
             String email = jwtService.extractUserEmail(token);
             Map<String, Object> userData = userService.getCurrentUserFromToken(token, email);
             log.info("Fetched current user data successfully");
-
+            System.out.println("userDATA" + userData);
             return ResponseEntity.ok(Map.of("status", "success", "user", userData));
 
         } catch (Exception e) {

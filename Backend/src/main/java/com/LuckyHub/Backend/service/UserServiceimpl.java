@@ -306,7 +306,6 @@ public class UserServiceimpl implements UserService{
     @Override
     public Long findUserIdByEmail(String email) {
         return userRepository.findIdByEmail(email);
-
     }
 
     @Override
@@ -314,62 +313,6 @@ public class UserServiceimpl implements UserService{
         return userRepository.findUserById(id);
     }
 
-    @Override
-    public void upgradeSubscription(String paymentId) {
-        // fetching payment data
-        Payment payment = paymentService.getPaymentDataToUpgradeService(paymentId);
-
-        Long userId = payment.getUserId();
-        SubscriptionTypes planType = payment.getPlanType();
-
-        Date startDate = new Date();
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(startDate);
-        cal.add(Calendar.MONTH, 1); // add 1 month
-        Date expiringDate  = cal.getTime();
-
-        SubscriptionStatus status = SubscriptionStatus.ACTIVE;
-
-        Integer maxComments = planType.getMaxComments();
-        Integer maxWinners = planType.getMaxWinners();
-        Integer remainingGiveaways = planType.getMaxGiveaways();
-
-        Optional<User> optUser = userRepository.findUserById(userId);
-
-        if (optUser.isEmpty())
-            throw new UserNotFoundException("optUser not found, unable to upgrade Subscription !");
-
-        User user = optUser.get();
-        Subscription subscription = user.getSubscription();
-
-        if (subscription != null) {
-            // update existing subscription
-            subscription.setSubscriptionType(planType);
-            subscription.setStartDate(startDate);
-            subscription.setExpiringDate(expiringDate);
-            subscription.setStatus(status);
-            subscription.setPaymentId(paymentId);
-            subscription.setMaxComments(maxComments);
-            subscription.setMaxWinners(maxWinners);
-            subscription.setRemainingGiveaways(remainingGiveaways);
-        } else {
-            // create new subscription if user has none
-            subscription = Subscription.builder()
-                    .subscriptionType(planType)
-                    .startDate(startDate)
-                    .expiringDate(expiringDate)
-                    .status(status)
-                    .paymentId(paymentId)
-                    .maxComments(maxComments)
-                    .maxWinners(maxWinners)
-                    .remainingGiveaways(remainingGiveaways)
-                    .user(user) // link to user
-                    .build();
-            user.setSubscription(subscription);
-        }
-
-        userRepository.save(user); // updating the user with updated/new subscription
-    }
 
     @Override
     public UserModel convertToUserModel(User user) {
@@ -459,7 +402,24 @@ public class UserServiceimpl implements UserService{
         userRepository.save(user);
     }
 
+    public Long getUserIdByRequest(HttpServletRequest request){
+        final String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return null;
+        }
+        String token = authHeader.substring(7);
 
+        String email = jwtService.extractUserEmail(token);
+        Long ID = findUserIdByEmail(email);
+
+        return ID;
+    }
+
+    @Override
+    public User findUserByUserId(Long userId) {
+        return userRepository.findById(userId)
+                             .orElseThrow(() -> new UserNotFoundException("User not found !"));
+    }
 
     @Override
     public void deletePasswordToken(String token) {

@@ -20,7 +20,6 @@ import java.util.UUID;
 public class ResendVerificationTokenEventListener implements ApplicationListener<ResendVerificationTokenEvent> {
     private final UserService userService;
     private final EmailService emailService;
-    private final VerificationTokenRepository verificationTokenRepository;
 
     @Override
     public void onApplicationEvent(ResendVerificationTokenEvent event) {
