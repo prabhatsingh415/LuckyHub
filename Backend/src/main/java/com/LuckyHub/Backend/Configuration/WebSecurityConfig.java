@@ -48,7 +48,8 @@ public class WebSecurityConfig {
                                 "/user/refresh-token",
                                 "/user/forgot-password",
                                 "/user/reset-password-confirm",
-                                "/swagger-ui/**", "/v3/api-docs/**"
+                                "/swagger-ui/**", "/v3/api-docs/**",
+                                "/api/webhooks/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
