@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Crown, Gift, CircleStar, Gem } from "lucide-react";
 import PlanCard from "../components/PlanCard";
+import InfoModal from "../pages/InfoModal";
 import {
   useDashboardAPIQuery,
   useCreateOrderMutation,
   useVerifyPaymentMutation,
 } from "../Redux/slices/apiSlice";
+import { useNavigate } from "react-router-dom";
 
 const subscriptionPlan = [
   {
@@ -52,6 +55,16 @@ function UpgradePlan() {
   const { data: dashboardData } = useDashboardAPIQuery();
   const [createOrder] = useCreateOrderMutation();
   const [verifyPayment] = useVerifyPaymentMutation();
+  const navigate = useNavigate();
+  const [modal, setModal] = useState({
+    open: false,
+    title: "",
+    message: "",
+    type: "info",
+    okText: "OK",
+    isContainsResendBtn: false,
+    onOk: () => setModal({ ...modal, open: false }),
+  });
 
   const currentPlan = dashboardData?.user?.subscriptionType || "FREE";
 
@@ -59,24 +72,44 @@ function UpgradePlan() {
     if (plan.name.toUpperCase() === "FREE") return;
 
     try {
-      // Step 1: Backend se order mangao (Approach 2: Sirf Plan Name)
       const orderData = await createOrder(plan.name.toUpperCase()).unwrap();
 
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Use your env variable
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: orderData.amount * 100,
         currency: "INR",
         name: "Lucky Hub",
         description: `Upgrade to ${plan.name} Plan`,
         order_id: orderData.orderId,
         handler: async function (response) {
-          await verifyPayment({
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature,
-          }).unwrap();
-          alert("Payment Successful! Plan Upgraded.");
-          window.location.reload(); // To refresh user status
+          try {
+            await verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            }).unwrap();
+            setModal({
+              open: true,
+              title: "Payment Successful",
+              message: `You have successfully upgraded to the ${plan.name} plan.`,
+              type: "success",
+              okText: "OK",
+              isContainsResendBtn: false,
+              onOk: () => {
+                window.location.href = "/settings";
+              },
+            });
+          } catch (err) {
+            setModal({
+              open: true,
+              title: "Verification Failed",
+              message:
+                "Payment verification failed. Please contact support if amount was deducted.",
+              type: "error",
+              okText: "OK",
+              onOk: () => setModal((prev) => ({ ...prev, open: false })),
+            });
+          }
         },
         prefill: {
           email: dashboardData?.user?.email,
@@ -87,7 +120,15 @@ function UpgradePlan() {
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      alert(err?.data?.message || "Payment initialization failed");
+      setModal({
+        open: true,
+        title: "Payment Failed",
+        message: "An error occurred during payment.",
+        type: "error",
+        isContainsResendBtn: false,
+        okText: "OK",
+        onOk: () => setModal({ ...modal, open: false }),
+      });
     }
   };
 
@@ -117,6 +158,17 @@ function UpgradePlan() {
           />
         ))}
       </div>
+      {modal.open && (
+        <InfoModal
+          isOpen={modal.open}
+          title={modal.title}
+          message={modal.message}
+          type={modal.type}
+          okText={modal.okText}
+          isContainsResendBtn={modal.isContainsResendBtn}
+          onOk={modal.onOk}
+        />
+      )}
     </div>
   );
 }
