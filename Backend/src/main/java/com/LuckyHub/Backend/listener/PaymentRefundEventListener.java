@@ -2,6 +2,11 @@ package com.LuckyHub.Backend.listener;
 
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.event.PaymentRefundEvent;
+import com.LuckyHub.Backend.exception.EmailSendingFailedException;
+import com.LuckyHub.Backend.exception.UserEmailNotFoundException;
+import com.LuckyHub.Backend.service.EmailService;
+import com.LuckyHub.Backend.service.UserService;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationListener;
 import org.springframework.scheduling.annotation.Async;
@@ -10,11 +15,20 @@ import org.springframework.stereotype.Component;
 @Async
 @Component
 @Slf4j
+@AllArgsConstructor
 public class PaymentRefundEventListener implements ApplicationListener<PaymentRefundEvent> {
+    private final UserService userService;
+    private final EmailService emailService;
+
     @Override
     public void onApplicationEvent(PaymentRefundEvent event) {
-         User user = event.getUser();
-        // PaymentSuccessfulEventListener ya dedicated FailureListener ke andar:
+        User user = event.getUser();
+        if (user == null) {
+            throw new UserEmailNotFoundException("User not found for token resend");
+        }
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new UserEmailNotFoundException("User email is missing or empty");
+        }
 
         String subject = "LuckyHub | Important Update: Order #%s ⚠️".formatted(event.getOrderId());
 
@@ -43,7 +57,7 @@ public class PaymentRefundEventListener implements ApplicationListener<PaymentRe
         You can try the payment again from your Dashboard. We suggest checking your 
         internet connection or trying a different payment method.
         
-        Sorry for the inconvenience, bhai!
+        Sorry for the inconvenience!
         
         Best Regards,
         Team LuckyHub
@@ -54,5 +68,11 @@ public class PaymentRefundEventListener implements ApplicationListener<PaymentRe
                     event.getOrderId(),
                     event.getAmount()
             );
+
+        try {
+            emailService.sendEmail(user.getEmail(), subject, msgBody);
+        } catch (Exception e) {
+            throw new EmailSendingFailedException("Failed to send verification email to " + user.getEmail(), e);
+        }
     }
 }
