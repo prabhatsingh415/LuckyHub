@@ -45,22 +45,25 @@ public class SubscriptionController {
     @PostMapping("/verifyPayment")
     public ResponseEntity<?> verifyPayment(HttpServletRequest request, @RequestBody Map<String, Object> data) {
 
+        String orderId = data.get("razorpay_order_id").toString();
         Long userId = userService.getUserIdByRequest(request);
+
         User user = userService.getUserById(userId).orElseThrow(() -> new UserNotFoundException("User Not Found!"));
 
-        boolean isVerified = paymentService.processPaymentForCompletion(data, user);
+        boolean verifiedNow = paymentService.processPaymentForCompletion(data, user);
+        boolean isAlreadySucceed = paymentService.checkIsPaymentSuccess(orderId);
 
-        if(isVerified){
+        if (verifiedNow || isAlreadySucceed) {
             return ResponseEntity.ok(Map.of(
                     "status", "success",
-                    "message", "Payment verified and subscription upgraded!"
-            ));
-        } else {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "status", "failed",
-                    "message", "Payment verification failed! Refund initiated."
+                    "message", "Payment successful and subscription activated."
             ));
         }
+
+        return ResponseEntity.accepted().body(Map.of(
+                "status", "pending",
+                "message", "Verification pending. Your plan will be active within 5 mins. If the payment fails, a refund will be initiated automatically—check your email for updates."
+        ));
     }
 
     @GetMapping("/lastPayment")

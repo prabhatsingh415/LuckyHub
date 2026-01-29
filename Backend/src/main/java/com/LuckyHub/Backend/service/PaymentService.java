@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 public interface PaymentService {
-    Payment createPartialPayment(Long userId, SubscriptionTypes planType, BigDecimal amount, String currency, String orderId, String receiptId);
-    Payment completePayment(String orderId, String paymentId, boolean signatureVerified, LocalDateTime paymentDate, User user, String planByAmount, int amount);
+    void createPartialPayment(Long userId, SubscriptionTypes planType, BigDecimal amount, String currency, String orderId, String receiptId);
+    void completePayment(String orderId, String paymentId, boolean signatureVerified, LocalDateTime paymentDate, User user, String planByAmount, int amount, String paymentMethod);
     Payment getPaymentByOrderId(String orderId);
     Payment getPaymentDataToUpgradeService(String paymentId);
 
@@ -24,6 +24,8 @@ public interface PaymentService {
     Map<String, Object> initializePayment(Long userId, String planName);
 
     void processRazorpayWebhook(String payload, String signature);
+
+    boolean checkIsPaymentSuccess(String orderId);
 }
 
 

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
@@ -21,6 +22,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Modifying
     void deleteByStatusAndCreatedAtBefore(PaymentStatus status, LocalDateTime dateTime);
 
+    Optional<Payment> findFirstByUserIdAndStatusOrderByCreatedAtDesc(Long userId, PaymentStatus status);
+    List<Payment> findAllByStatusAndCreatedAtBefore(PaymentStatus status, LocalDateTime dateTime);
 }
 
 

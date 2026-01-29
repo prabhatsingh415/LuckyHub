@@ -56,12 +56,12 @@ public class Payment {
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now(ZoneId.of("Asia/Kolkata"));
-        this.updatedAt = LocalDateTime.now(ZoneId.of("Asia/Kolkata"));
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now(ZoneId.of("Asia/Kolkata"));
+        this.updatedAt = LocalDateTime.now();
     }
 }

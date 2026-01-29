@@ -51,7 +51,7 @@ public class UserController {
 
     // -------------------- SIGNUP --------------------
     @PostMapping("/signup")
-    public ResponseEntity<?> signUp(@RequestBody UserModel userModel, final HttpServletRequest request) {
+    public ResponseEntity<?> signUp(@RequestBody UserModel userModel) {
 
         String email = userModel.getEmail();
         log.info("Signup attempt for email: {}", email);
