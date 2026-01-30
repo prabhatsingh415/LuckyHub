@@ -13,7 +13,6 @@ function SignIn() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm();
   const formData = [
@@ -47,18 +46,18 @@ function SignIn() {
       placeholder: "Enter your password",
       register: register("password", {
         required: "Password is required",
-        // minLength: {
-        //   value: 6,
-        //   message: "Password must be at least 6 characters",
-        // },
-        // maxLength: {
-        //   value: 30,
-        //   message: "Password must be less than 30 characters",
-        // },
-        // pattern: {
-        //   value: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$/,
-        //   message: "Password must contain letters and numbers",
-        // },
+        minLength: {
+          value: 6,
+          message: "Password must be at least 6 characters",
+        },
+        maxLength: {
+          value: 30,
+          message: "Password must be less than 30 characters",
+        },
+        pattern: {
+          value: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$/,
+          message: "Password must contain letters and numbers",
+        },
       }),
     },
   ];
@@ -73,11 +72,17 @@ function SignIn() {
     signIn(formValues);
   };
 
+  const unverifiedEmail = error?.data?.email || "";
+  const resendAttempts = Number(
+    localStorage.getItem(`resendAttempts_${unverifiedEmail}`) || 0
+  );
+
   useEffect(() => {
     if (isSuccess) {
       localStorage.setItem("isSignIn", "true");
     }
   }, [isSuccess, data]);
+
   return (
     <div className="w-full flex flex-col justify-center items-center dark:text-white">
       {isLoading && <Loader />}
@@ -99,13 +104,28 @@ function SignIn() {
         <InfoModal
           isOpen={true}
           type="error"
-          title="SignIn Failed"
-          isContainsResendBtn={false}
+          title={resendAttempts >= 3 ? "Limit Reached" : "SignIn Failed"}
+          isContainsResendBtn={error?.data?.status === "UNVERIFIED"}
           message={
-            error?.data?.message || "Something went wrong, please try again."
+            resendAttempts >= 3
+              ? "You reached the maximum limit. Try again tomorrow."
+              : error?.data?.message || "Something went wrong."
           }
-          okText="Try Again"
-          onOk={() => reset()}
+          okText={
+            error?.data?.status === "UNVERIFIED" ? "Go to Gmail" : "Try Again"
+          }
+          redirectUrl={
+            error?.data?.status === "UNVERIFIED"
+              ? "https://mail.google.com/"
+              : null
+          }
+          onOk={() => {
+            if (error?.data?.status === "UNVERIFIED" && error?.data?.token) {
+              localStorage.setItem("SignUpToken", error?.data?.token);
+            }
+            reset();
+          }}
+          userEmail={error?.data?.email || ""}
         />
       )}
       <div className="w-full flex flex-col justify-center items-center">

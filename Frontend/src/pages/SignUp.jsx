@@ -6,6 +6,7 @@ import { Lock, Mail, User } from "lucide-react";
 import { useSignUpMutation } from "../Redux/slices/apiSlice";
 import Loader from "./Loader";
 import InfoModal from "./InfoModal";
+import { useEffect } from "react";
 
 function SignUp() {
   const theme = useSelector((state) => state.theme.mode);
@@ -108,9 +109,11 @@ function SignUp() {
     signUpData(formValues);
   };
 
-  {
-    data && localStorage.setItem("SignUpToken", data.token);
-  }
+  useEffect(() => {
+    if (isSuccess && data?.token) {
+      localStorage.setItem("SignUpToken", data.token);
+    }
+  }, [isSuccess, data]);
   return (
     <div className="w-full flex flex-col  md:mt-32 md:ml-5 lg:mt-0 lg:ml-0 justify-center items-center dark:text-white">
       {/* Loader */}
@@ -125,6 +128,8 @@ function SignUp() {
           okText="Go to Gmail"
           redirectUrl="https://mail.google.com/"
           onOk={() => reset()}
+          userEmail={data?.email}
+          isContainsResendBtn={true}
         />
       )}
 
