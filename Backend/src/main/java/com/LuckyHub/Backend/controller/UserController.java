@@ -81,7 +81,8 @@ public class UserController {
         return ResponseEntity.ok(Map.of(
                 "status", "success",
                 "message", "User registered successfully. Please verify your email.",
-                "token", token
+                "token", token,
+                "email", user.getEmail()
         ));
     }
 
@@ -90,20 +91,32 @@ public class UserController {
     public ResponseEntity<?> verifyUser(@RequestParam("token") String token) {
 
         VerificationToken verificationToken = verificationTokenRepository.findByToken(token);
-        if (verificationToken == null)
+        if (verificationToken == null) {
             return ResponseEntity.badRequest().body(Map.of(
                     "status", "Failed",
                     "message", "Invalid verification link!"
             ));
+        }
+
+        User user = verificationToken.getUser();
+        if(user == null)throw new UserNotFoundException("User not found !");
+        String userEmail = user.getEmail();
+
 
         String result = userService.verifyVerificationToken(token);
+
+        if (result.equalsIgnoreCase("Already Verified")) {
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", "Account is already active! Please login."
+            ));
+        }
+
         if (!result.equalsIgnoreCase("Valid"))
             return ResponseEntity.badRequest().body(Map.of(
                     "status", "Failed",
                     "message", result
             ));
-
-        User user = verificationToken.getUser();
 
         // Generate JWT and Refresh Token
         String accessToken = jwtService.generateToken(user);
@@ -115,7 +128,8 @@ public class UserController {
                 .body(Map.of(
                         "status", "success",
                         "message", "Account activated!",
-                        "accessToken", accessToken
+                        "accessToken", accessToken,
+                        "email", userEmail
                 ));
     }
 
@@ -125,12 +139,24 @@ public class UserController {
     public ResponseEntity<?> login(@RequestBody UserModel userModel) {
 
         String email = userModel.getEmail();
-        Long userId = userService.findUserIdByEmail(email);
+        User user = userService.findUserByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("Invalid email or password"));
 
-        if(null == userId)throw new UserNotFoundException("Invalid email or password");
+        if (!user.isVerified()) {
+            VerificationToken vToken = verificationTokenRepository.findByUser(user);
+            String tokenString = (vToken != null) ? vToken.getToken() : "";
+
+
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                    "status", "UNVERIFIED",
+                    "message", "Your account is not verified yet. Please verify your email.",
+                    "email", user.getEmail(),
+                    "token", tokenString
+            ));
+        }
 
         // Max Limit 20 times a day
-        if(!rateLimiterService.tryConsume("login", userId, 20)){
+        if(!rateLimiterService.tryConsume("login", user.getId(), 20)){
             throw new MaximumLimitReachedException("You have reached the maximum limit for logging in. Please try again after 24 hours.");
         }
 

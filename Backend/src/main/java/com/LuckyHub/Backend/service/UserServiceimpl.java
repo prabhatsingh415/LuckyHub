@@ -137,22 +137,26 @@ public class UserServiceimpl implements UserService{
         VerificationToken verificationToken = verificationTokenRepository.findByToken(token);
 
         if(verificationToken == null){
-            System.out.println("Token is INVALID because its null !");
+            log.error("Token is INVALID because its null !");
             return "Invalid Token !";
+        }
+
+        User user = verificationToken.getUser();
+        if (user.isVerified()) {
+            return "Already Verified";
         }
 
         Calendar calendar = Calendar.getInstance();
 
         if (verificationToken.getExpirationTime().before(calendar.getTime())) {
-            System.out.println("Verification token is Expired: " + verificationToken);
+            log.error("Verification token is Expired: {}", verificationToken);
             verificationTokenRepository.delete(verificationToken);
             return "Token Expired !";
         }
 
-        User user = verificationToken.getUser();
         user.setVerified(true);
         userRepository.save(user);
-
+        verificationTokenRepository.delete(verificationToken);
         return "Valid";
     }  //Signup Verification
 

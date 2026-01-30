@@ -1,6 +1,7 @@
 package com.LuckyHub.Backend.exception;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -179,6 +180,16 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+
+    @ExceptionHandler(IncorrectResultSizeDataAccessException.class)
+    public ResponseEntity<?> handleNonUniqueResult(IncorrectResultSizeDataAccessException ex) {
+        System.err.println("Multiple Records Error: " + ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                "status", "Error",
+                "message", "System found multiple records where only one was expected. Please contact support to fix your account data."
+        ));
+    }
     @ExceptionHandler(PaymentGatewayException.class)
     public ResponseEntity<Map<String, String>> handlePaymentGatewayException(Exception ex){
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)

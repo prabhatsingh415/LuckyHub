@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
-import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
 
 @RestController
@@ -59,7 +59,7 @@ public class GoogleAuthController {
                     restTemplate.postForEntity(tokenEndpoint, request, Map.class);
 
             //ID token
-            String idToken = (String) tokenResponse.getBody().get("id_token");
+            String idToken = (String) Objects.requireNonNull(tokenResponse.getBody()).get("id_token");
 
             //fetching User Info
             String userInfoUrl = "https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken;

@@ -6,6 +6,7 @@ import com.LuckyHub.Backend.exception.RefreshTokenExpiredException;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
 import com.LuckyHub.Backend.repository.RefreshTokenRepository;
 import com.LuckyHub.Backend.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -24,20 +25,27 @@ public class RefreshTokenService {
         this.userRepository = userRepository;
     }
 
+    @Transactional
     public RefreshToken createRefreshToken(String email){
-        Optional<User> user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found. Please log in again."));
 
-        if(user.isEmpty()){
-            throw new UserNotFoundException("User not found. Please log in again.");
+        Optional<RefreshToken> existingToken = repository.findByUser(user);
+
+        RefreshToken refreshToken;
+        if (existingToken.isPresent()) {
+            refreshToken = existingToken.get();
+        } else {
+            refreshToken = new RefreshToken();
+            refreshToken.setUser(user);
         }
 
-        RefreshToken refreshToken = new RefreshToken();
-        refreshToken.setUser(user.get());
         refreshToken.setToken(UUID.randomUUID().toString());
         refreshToken.setExpiryDate(Instant.now().plus(14, ChronoUnit.DAYS));
 
         return repository.save(refreshToken);
     }
+
     public Optional<RefreshToken> findByToken(String token) {
         return repository.findByToken(token);
     }
