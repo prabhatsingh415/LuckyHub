@@ -17,6 +17,7 @@ import ResetPassword from "../pages/ResetPassword";
 import AuthSuccess from "../pages/AuthSuccess";
 import UpgradePlan from "../pages/UpgradePlan.jsx";
 import Support from "../pages/Support.jsx";
+import ReviewOrder from "../pages/ReviewOrder.jsx";
 
 export const router = createBrowserRouter([
   { path: "/", element: <PublicRoute element={<LandingPage />} /> },
@@ -32,6 +33,10 @@ export const router = createBrowserRouter([
   {
     path: "/upgrade-plan",
     element: <ProtectedRoute element={<UpgradePlan />} />,
+  },
+  {
+    path: "/review-order",
+    element: <ProtectedRoute element={<ReviewOrder />} />,
   },
   {
     element: <AppLayout />,

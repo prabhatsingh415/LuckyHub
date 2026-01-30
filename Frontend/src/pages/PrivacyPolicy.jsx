@@ -137,12 +137,12 @@ const PrivacyPolicy = () => {
                 </p>
               </div>
             </div>
-            <div className="text-zinc-500 text-xs font-mono bg-zinc-50 dark:bg-zinc-900/50 px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800">
+            <div className="text-zinc-500 text-xs font-mono bg-zinc-50 dark:bg-zinc-900 px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800">
               Updated: {lastUpdated}
             </div>
           </div>
 
-          <div className="mb-8 p-6 rounded-xl border border-zinc-200 dark:border-red-900/30 bg-zinc-50 dark:bg-gradient-to-br dark:from-red-950/10 dark:to-transparent">
+          <div className="mb-8 p-6 rounded-xl border border-zinc-200 dark:border-red-700 bg-zinc-50 dark:bg-[#0a0a0a] dark:from-red-950/10 dark:to-transparent">
             <div className="flex items-center gap-2 mb-3 text-red-500">
               <Database className="w-5 h-5" />
               <h2 className="font-semibold text-lg">Introduction</h2>

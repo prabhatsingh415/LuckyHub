@@ -2,11 +2,7 @@ import { useState } from "react";
 import { Crown, Gift, CircleStar, Gem } from "lucide-react";
 import PlanCard from "../components/PlanCard";
 import InfoModal from "../pages/InfoModal";
-import {
-  useDashboardAPIQuery,
-  useCreateOrderMutation,
-  useVerifyPaymentMutation,
-} from "../Redux/slices/apiSlice";
+import { useDashboardAPIQuery } from "../Redux/slices/apiSlice";
 import { useNavigate } from "react-router-dom";
 
 const subscriptionPlan = [
@@ -14,7 +10,7 @@ const subscriptionPlan = [
     id: 1,
     icon: <Gift />,
     name: "Free",
-    price: "₹0/forever",
+    price: "₹0",
     description: "Perfect for getting started with giveaways",
     features: [
       "3 giveaways per month",
@@ -27,7 +23,7 @@ const subscriptionPlan = [
     id: 2,
     icon: <CircleStar />,
     name: "Gold",
-    price: "₹49/month",
+    price: "₹49",
     description: "Ideal for frequent organizers with advanced features",
     features: [
       "10 giveaways per month",
@@ -40,7 +36,7 @@ const subscriptionPlan = [
     id: 3,
     icon: <Gem />,
     name: "Diamond",
-    price: "₹79/month",
+    price: "₹79",
     description: "Unlimited giveaways and top-tier features for pros",
     features: [
       "Unlimited giveaways",
@@ -53,9 +49,6 @@ const subscriptionPlan = [
 
 function UpgradePlan() {
   const { data: dashboardData } = useDashboardAPIQuery();
-  const [createOrder] = useCreateOrderMutation();
-  const [verifyPayment] = useVerifyPaymentMutation();
-  const navigate = useNavigate();
   const [modal, setModal] = useState({
     open: false,
     title: "",
@@ -67,70 +60,8 @@ function UpgradePlan() {
   });
 
   const currentPlan = dashboardData?.user?.subscriptionType || "FREE";
-
-  const handlePayment = async (plan) => {
-    if (plan.name.toUpperCase() === "FREE") return;
-
-    try {
-      const orderData = await createOrder(plan.name.toUpperCase()).unwrap();
-
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: orderData.amount * 100,
-        currency: "INR",
-        name: "Lucky Hub",
-        description: `Upgrade to ${plan.name} Plan`,
-        order_id: orderData.orderId,
-        handler: async function (response) {
-          try {
-            await verifyPayment({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            }).unwrap();
-            setModal({
-              open: true,
-              title: "Payment Successful",
-              message: `You have successfully upgraded to the ${plan.name} plan.`,
-              type: "success",
-              okText: "OK",
-              isContainsResendBtn: false,
-              onOk: () => {
-                window.location.href = "/settings";
-              },
-            });
-          } catch (err) {
-            setModal({
-              open: true,
-              title: "Verification Failed",
-              message:
-                "Payment verification failed. Please contact support if amount was deducted.",
-              type: "error",
-              okText: "OK",
-              onOk: () => setModal((prev) => ({ ...prev, open: false })),
-            });
-          }
-        },
-        prefill: {
-          email: dashboardData?.user?.email,
-        },
-        theme: { color: "#ff4d29" },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (err) {
-      setModal({
-        open: true,
-        title: "Payment Failed",
-        message: "An error occurred during payment.",
-        type: "error",
-        isContainsResendBtn: false,
-        okText: "OK",
-        onOk: () => setModal({ ...modal, open: false }),
-      });
-    }
-  };
+  const userEmail = dashboardData?.user?.email || "";
+  const { handlePayment } = usePayment(userEmail, setModal);
 
   return (
     <div className="min-h-screen dark:bg-[#0a0a0a] flex flex-col items-center p-8 gap-12 text-white">
@@ -154,7 +85,7 @@ function UpgradePlan() {
             key={plan.id}
             plan={plan}
             isCurrent={currentPlan === plan.name.toUpperCase()}
-            onClick={() => handlePayment(plan)}
+            onClick={() => handlePayment(plan.name)}
           />
         ))}
       </div>
