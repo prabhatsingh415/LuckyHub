@@ -11,6 +11,8 @@ import com.razorpay.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -31,9 +33,9 @@ public class SubscriptionController {
     }
 
     @PostMapping("/createOrder")
-    public ResponseEntity<?> proceedPayment(HttpServletRequest request, @RequestBody Map<String, String> data) throws RazorpayException {
-
-        Long userId = userService.getUserIdByRequest(request);
+    public ResponseEntity<?> proceedPayment(@AuthenticationPrincipal UserDetails userDetails, @RequestBody Map<String, String> data) throws RazorpayException {
+        String email = userDetails.getUsername();
+        Long userId = userService.findUserIdByEmail(email);
         String planName = data.get("planName").toUpperCase();
 
         Map<String, Object> response = paymentService.initializePayment(userId, planName);
@@ -43,10 +45,11 @@ public class SubscriptionController {
 
 
     @PostMapping("/verifyPayment")
-    public ResponseEntity<?> verifyPayment(HttpServletRequest request, @RequestBody Map<String, Object> data) {
+    public ResponseEntity<?> verifyPayment(@AuthenticationPrincipal UserDetails userDetails, @RequestBody Map<String, Object> data) {
 
         String orderId = data.get("razorpay_order_id").toString();
-        Long userId = userService.getUserIdByRequest(request);
+        String email = userDetails.getUsername();
+        Long userId = userService.findUserIdByEmail(email);
 
         User user = userService.getUserById(userId).orElseThrow(() -> new UserNotFoundException("User Not Found!"));
 
@@ -67,33 +70,14 @@ public class SubscriptionController {
     }
 
     @GetMapping("/lastPayment")
-    public ResponseEntity<?> getLastPayment(HttpServletRequest request){
-        String authHeader = request.getHeader("Authorization");
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Missing or invalid Authorization header"));
-        }
-
-        String token = authHeader.substring(7);
-        String email = jwtService.extractUserEmail(token);
-
+    public ResponseEntity<?> getLastPayment(@AuthenticationPrincipal UserDetails userDetails){
+        String email = userDetails.getUsername();
         return ResponseEntity.ok(paymentService.getLastPayment(email));
     }
 
     @GetMapping("/getSubscription")
-    public ResponseEntity<?> getSubscription(HttpServletRequest request){
-        String authHeader = request.getHeader("Authorization");
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Missing or invalid Authorization header"));
-        }
-
-        String token = authHeader.substring(7);
-        String email = jwtService.extractUserEmail(token);
-
+    public ResponseEntity<?> getSubscription(@AuthenticationPrincipal UserDetails userDetails){
+        String email = userDetails.getUsername();
         return ResponseEntity.ok(subscriptionService.getUserSubscription(email));
     }
-
 }

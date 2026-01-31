@@ -8,4 +8,6 @@ public interface GiveawayHistoryService {
     void saveHistory(GiveawayHistory giveawayHistory);
 
     List<GiveawayHistory> history(long userId);
+
+    void deleteHistory(long userId);
 }

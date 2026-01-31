@@ -1,7 +1,6 @@
 package com.LuckyHub.Backend.Configuration;
 
 import com.LuckyHub.Backend.service.JWTService;
-import com.LuckyHub.Backend.service.RefreshTokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

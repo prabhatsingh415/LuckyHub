@@ -96,7 +96,7 @@ public class WinnerServiceImpl implements WinnerService {
 
         if (cacheManager.getCache("dashboardCache") != null) {
             Objects.requireNonNull(cacheManager.getCache("dashboardCache")).evict(email);
-        } 
+        }
         return new WinnerResponse(winners);
     }
 }

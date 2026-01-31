@@ -2,6 +2,7 @@ package com.LuckyHub.Backend.service;
 
 import com.LuckyHub.Backend.entity.GiveawayHistory;
 import com.LuckyHub.Backend.repository.GiveawayHistoryRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -37,4 +38,9 @@ public class GiveawayHistoryServiceImpl implements GiveawayHistoryService{
         return giveawayHistoryRepository.findByUserId(userId);
     }
 
+    @Transactional
+    @Override
+    public void deleteHistory(long userId ) {
+        giveawayHistoryRepository.deleteByUserId(userId);
+    }
 }

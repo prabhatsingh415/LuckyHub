@@ -5,7 +5,6 @@ import com.LuckyHub.Backend.entity.Subscription;
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.model.SubscriptionStatus;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
-import com.LuckyHub.Backend.model.UserModel;
 import com.LuckyHub.Backend.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,15 +19,12 @@ public class GoogleAuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
-    private final UserService userService;
 
     public GoogleAuthService(UserRepository userRepository,
-                             PasswordEncoder passwordEncoder,
-                             JWTService jwtService, RefreshTokenService refreshTokenService, UserService userService) {
+                             PasswordEncoder passwordEncoder, RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenService = refreshTokenService;
-        this.userService = userService;
     }
 
     // Process Google user info map and return JWT

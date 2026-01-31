@@ -5,6 +5,7 @@ import com.LuckyHub.Backend.model.PaymentStatus;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +25,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     Optional<Payment> findFirstByUserIdAndStatusOrderByCreatedAtDesc(Long userId, PaymentStatus status);
     List<Payment> findAllByStatusAndCreatedAtBefore(PaymentStatus status, LocalDateTime dateTime);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Payment p WHERE p.userId = :userId")
+    void deleteByUserId(long userId);
 }
+
 
 

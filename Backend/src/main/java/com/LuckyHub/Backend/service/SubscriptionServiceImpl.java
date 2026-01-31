@@ -29,17 +29,6 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         this.cacheManager = cacheManager;
     }
 
-
-    @Override
-    public boolean verifyTheAmount(int subAmount) {
-
-         for (SubscriptionTypes subscriptionTypes : SubscriptionTypes.values()){
-             if(subscriptionTypes.getPrice() == subAmount)return true;
-         }
-
-        return false;
-    }
-
     @Override
     public SubscriptionTypes getPlanByAmount(int subAmount) {
         for (SubscriptionTypes type : SubscriptionTypes.values()) {

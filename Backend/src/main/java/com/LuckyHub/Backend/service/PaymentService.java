@@ -26,6 +26,8 @@ public interface PaymentService {
     void processRazorpayWebhook(String payload, String signature);
 
     boolean checkIsPaymentSuccess(String orderId);
+
+    void deletePayment(long userId);
 }
 
 

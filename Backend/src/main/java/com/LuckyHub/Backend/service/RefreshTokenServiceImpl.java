@@ -1,0 +1,75 @@
+package com.LuckyHub.Backend.service;
+
+import com.LuckyHub.Backend.entity.RefreshToken;
+import com.LuckyHub.Backend.entity.User;
+import com.LuckyHub.Backend.exception.RefreshTokenExpiredException;
+import com.LuckyHub.Backend.exception.UserNotFoundException;
+import com.LuckyHub.Backend.repository.PasswordTokenRepository;
+import com.LuckyHub.Backend.repository.RefreshTokenRepository;
+import com.LuckyHub.Backend.repository.UserRepository;
+import jakarta.transaction.Transactional;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
+import java.util.UUID;
+
+@Service
+public class RefreshTokenServiceImpl implements RefreshTokenService {
+
+    private final RefreshTokenRepository repository;
+    private final UserRepository userRepository;
+
+    public RefreshTokenServiceImpl(RefreshTokenRepository repository, UserRepository userRepository) {
+        this.repository = repository;
+        this.userRepository = userRepository;
+    }
+
+    @Transactional
+    public RefreshToken createRefreshToken(String email){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found. Please log in again."));
+
+        Optional<RefreshToken> existingToken = repository.findByUser(user);
+
+        RefreshToken refreshToken;
+        if (existingToken.isPresent()) {
+            refreshToken = existingToken.get();
+        } else {
+            refreshToken = new RefreshToken();
+            refreshToken.setUser(user);
+        }
+
+        refreshToken.setToken(UUID.randomUUID().toString());
+        refreshToken.setExpiryDate(Instant.now().plus(14, ChronoUnit.DAYS));
+
+        return repository.save(refreshToken);
+    }
+
+    public Optional<RefreshToken> findByToken(String token) {
+        return repository.findByToken(token);
+    }
+
+    public void verifyExpiration(RefreshToken token){
+        if (token == null) {
+            throw new RefreshTokenExpiredException("Invalid refresh token.");
+        }
+        if(token.getExpiryDate().isBefore(Instant.now())){
+             repository.delete(token);
+            throw new RefreshTokenExpiredException("Refresh token expired. Please log in again.");
+        }
+    }
+
+    public void deleteByUserId(Long userId) {
+         Optional<User> user = userRepository.findById(userId);
+         if(user.isEmpty()){
+             throw new UserNotFoundException("Unable to delete the refresh Token!, No user Found");
+         }
+        repository.deleteByUserId(user.get().getId());
+    }
+
+    public void deleteByUserEmail(String email) {
+        repository.deleteByUserEmail(email);
+    }
+}

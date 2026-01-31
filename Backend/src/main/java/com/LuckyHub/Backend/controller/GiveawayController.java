@@ -9,6 +9,8 @@ import com.LuckyHub.Backend.service.JWTService;
 import com.LuckyHub.Backend.service.UserService;
 import com.LuckyHub.Backend.service.WinnerService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,40 +21,26 @@ import java.util.Map;
 public class GiveawayController {
 
     private final WinnerService winnerService;
-    private final JWTService jwtService;
     private final GiveawayHistoryService giveawayHistoryService;
     private final UserService userService;
 
-    public GiveawayController(WinnerService winnerService, JWTService jwtService, GiveawayHistoryService giveawayHistoryService, UserService userService) {
+    public GiveawayController(WinnerService winnerService, GiveawayHistoryService giveawayHistoryService, UserService userService) {
         this.winnerService = winnerService;
-        this.jwtService = jwtService;
+
         this.giveawayHistoryService = giveawayHistoryService;
         this.userService = userService;
     }
 
     @PostMapping("/pick-a-winner")
-    public ResponseEntity<WinnerResponse> getWinner(@RequestBody WinnerRequest request,
-                                       @RequestHeader("Authorization") String authHeader){
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new JWTTokenNotFoundOrInvalidException("Missing or invalid Authorization header");
-        }
-        String token = authHeader.substring(7);
-        String email = jwtService.extractUserEmail(token);
+    public ResponseEntity<WinnerResponse> getWinner(@RequestBody WinnerRequest request, @AuthenticationPrincipal UserDetails userDetails){
+        String email = userDetails.getUsername();
         WinnerResponse winners = winnerService.findWinner(request, email);
-
         return ResponseEntity.ok().body(winners);
     }
 
     @GetMapping("/history")
-    public ResponseEntity<?> getHistory(@RequestHeader("Authorization") String authHeader){
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new JWTTokenNotFoundOrInvalidException("Missing or invalid Authorization header");
-        }
-        String token = authHeader.substring(7);
-        String email = jwtService.extractUserEmail(token);
-
-
+    public ResponseEntity<?> getHistory(@AuthenticationPrincipal UserDetails userDetails){
+        String email = userDetails.getUsername();
         Long userId = userService.findUserIdByEmail(email);
         List<GiveawayHistory> history = giveawayHistoryService.history(userId);
 
