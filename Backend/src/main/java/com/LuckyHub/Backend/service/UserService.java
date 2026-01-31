@@ -5,8 +5,10 @@ import com.LuckyHub.Backend.model.ChangeNameRequest;
 import com.LuckyHub.Backend.model.ChangePasswordModel;
 import com.LuckyHub.Backend.model.UserModel;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -37,13 +39,11 @@ public interface UserService {
 
     void deletePasswordToken(String token);
 
-    Map<String, Object> getCurrentUserFromToken(String token, String email);
+    Map<String, Object> getCurrentUserFromToken(String email);
 
     Long findUserIdByEmail(String  email);
 
     Optional<User> getUserById(Long id);
-
-    UserModel convertToUserModel(User user);
 
     boolean changeUserName(String email, ChangeNameRequest request);
 
@@ -51,7 +51,9 @@ public interface UserService {
 
     void updatePassword(String email, ChangePasswordModel changePasswordModel);
 
-    Long getUserIdByRequest(HttpServletRequest request);
-
     User findUserByUserId(Long userId);
+
+    ResponseCookie logoutUser(String email);
+
+    void deleteUserAccount(String email);
 }

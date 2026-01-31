@@ -29,7 +29,7 @@ public class User {
     private Date createdAt;
     private Date updatedAt;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "subscription_id")
     private Subscription subscription;
 

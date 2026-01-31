@@ -2,10 +2,7 @@ package com.LuckyHub.Backend.service;
 
 import com.LuckyHub.Backend.entity.*;
 import com.LuckyHub.Backend.event.ResendVerificationTokenEvent;
-import com.LuckyHub.Backend.exception.ImageUploadFailedException;
-import com.LuckyHub.Backend.exception.InvalidCurrentPasswordException;
-import com.LuckyHub.Backend.exception.PasswordMismatchException;
-import com.LuckyHub.Backend.exception.UserNotFoundException;
+import com.LuckyHub.Backend.exception.*;
 import com.LuckyHub.Backend.model.*;
 import com.LuckyHub.Backend.repository.PasswordTokenRepository;
 import com.LuckyHub.Backend.repository.UserRepository;
@@ -20,10 +17,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -44,9 +43,13 @@ public class UserServiceimpl implements UserService{
     private final ApplicationEventPublisher publisher;
     private final PasswordTokenRepository passwordTokenRepository;
     private final RefreshTokenService refreshTokenService;
-    private final PaymentService paymentService;
     private final CacheManager cacheManager;
     private final Cloudinary cloudinary;
+    private final SubscriptionService subscriptionService;
+    private final GiveawayHistoryService giveawayHistoryService;
+    private final PaymentService paymentService;
+    private final RateLimiterService rateLimiterService;
+
 
     public User save(UserModel userModel){
          Optional<User> optUser = userRepository.findByEmail(userModel.getEmail());
@@ -274,7 +277,7 @@ public class UserServiceimpl implements UserService{
 
     @Override
     @Cacheable(value = "dashboardCache", key = "#email")
-    public Map<String, Object> getCurrentUserFromToken(String token, String email) {
+    public Map<String, Object> getCurrentUserFromToken(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -317,17 +320,6 @@ public class UserServiceimpl implements UserService{
         return userRepository.findUserById(id);
     }
 
-
-    @Override
-    public UserModel convertToUserModel(User user) {
-        UserModel userModel = new UserModel();
-        userModel.setEmail(user.getEmail());
-        userModel.setFirstName(user.getFirstName());
-        userModel.setLastName(user.getLastName());
-        userModel.setPassword(user.getPassword());
-        return userModel;
-    }
-
     @Override
     @Transactional
     public boolean changeUserName(String email, ChangeNameRequest request) {
@@ -356,8 +348,7 @@ public class UserServiceimpl implements UserService{
     @Transactional
     @Override
     public void changeAvatar(String email, MultipartFile file) {
-
-        Map<String, Object> upload;
+        Map upload;
         try {
             upload = cloudinary.uploader().upload(
                     file.getBytes(),
@@ -406,23 +397,46 @@ public class UserServiceimpl implements UserService{
         userRepository.save(user);
     }
 
-    public Long getUserIdByRequest(HttpServletRequest request){
-        final String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return null;
-        }
-        String token = authHeader.substring(7);
-
-        String email = jwtService.extractUserEmail(token);
-        Long ID = findUserIdByEmail(email);
-
-        return ID;
-    }
-
     @Override
     public User findUserByUserId(Long userId) {
         return userRepository.findById(userId)
                              .orElseThrow(() -> new UserNotFoundException("User not found !"));
+    }
+
+    @Override
+    public ResponseCookie logoutUser(String email) {
+        refreshTokenService.deleteByUserEmail(email);
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
+                .maxAge(0)
+                .path("/")
+                .httpOnly(true)
+                .build();
+
+        SecurityContextHolder.clearContext();
+        log.info("User {} logged out successfully", email);
+
+        return cookie;
+    }
+
+    @Override
+    @Transactional
+    public void deleteUserAccount(String email) {
+      User user = userRepository.findByEmail(email)
+                  .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+      giveawayHistoryService.deleteHistory(user.getId());
+      paymentService.deletePayment(user.getId());
+
+      rateLimiterService.clearLimit(user.getId());
+
+      //clear cache
+        if (cacheManager.getCache("dashboardCache") != null) {
+            Objects.requireNonNull(cacheManager.getCache("dashboardCache")).evict(email);
+        }
+
+        userRepository.delete(user);
+
+        log.info("Account and all related data deleted for: {}", email);
     }
 
     @Override

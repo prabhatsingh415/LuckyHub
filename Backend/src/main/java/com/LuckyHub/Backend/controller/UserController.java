@@ -14,10 +14,7 @@ import com.LuckyHub.Backend.model.ChangePasswordModel;
 import com.LuckyHub.Backend.model.PasswordModel;
 import com.LuckyHub.Backend.model.UserModel;
 import com.LuckyHub.Backend.repository.VerificationTokenRepository;
-import com.LuckyHub.Backend.service.JWTService;
-import com.LuckyHub.Backend.service.RateLimiterService;
-import com.LuckyHub.Backend.service.RefreshTokenService;
-import com.LuckyHub.Backend.service.UserService;
+import com.LuckyHub.Backend.service.*;
 import com.LuckyHub.Backend.utils.RefreshTokenUtil;
 import com.LuckyHub.Backend.utils.UrlUtil;
 import jakarta.servlet.http.Cookie;
@@ -29,6 +26,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -48,6 +47,8 @@ public class UserController {
     private final JWTService jwtService;
     private final VerificationTokenRepository verificationTokenRepository;
     private final RateLimiterService rateLimiterService;
+    private final OtpService otpService;
+
 
     // -------------------- SIGNUP --------------------
     @PostMapping("/signup")
@@ -66,7 +67,7 @@ public class UserController {
         }
 
         // Max Limit 5 times a day
-        if(!rateLimiterService.tryConsume("signUp", user.getId(), 5)){
+        if(rateLimiterService.tryConsume("signUp", user.getId(), 5)){
             throw new MaximumLimitReachedException("You have reached the maximum limit for Sign up. Please try again after 24 hours.");
         }
 
@@ -156,7 +157,7 @@ public class UserController {
         }
 
         // Max Limit 20 times a day
-        if(!rateLimiterService.tryConsume("login", user.getId(), 20)){
+        if(rateLimiterService.tryConsume("login", user.getId(), 20)){
             throw new MaximumLimitReachedException("You have reached the maximum limit for logging in. Please try again after 24 hours.");
         }
 
@@ -232,7 +233,7 @@ public class UserController {
 
         if(user == null) throw new UserNotFoundException("User not found !");
 
-        if(!rateLimiterService.tryConsume("resendToken", user.getId(), 3)){
+        if(rateLimiterService.tryConsume("resendToken", user.getId(), 3)){
              throw new MaximumLimitReachedException("You have reached the maximum limit for resending the verification email. Please try again after 24 hours.");
         }
 
@@ -252,7 +253,7 @@ public class UserController {
         }
 
       // checking for maximum limit
-        if(!rateLimiterService.tryConsume("forgotPassword", user.get().getId(), 5)){
+        if(rateLimiterService.tryConsume("forgotPassword", user.get().getId(), 5)){
             throw new MaximumLimitReachedException("You have reached the maximum limit for forgot password. Please try again after 24 hours.");
         }
 
@@ -284,7 +285,7 @@ public class UserController {
         Optional<User> user = userService.getUserByPasswordResetToken(token);
 
         // checking for maximum limit
-        if(user.isPresent() && !rateLimiterService.tryConsume("resetPassword", user.get().getId(), 5)){
+        if(user.isPresent() && rateLimiterService.tryConsume("resetPassword", user.get().getId(), 5)){
             throw new MaximumLimitReachedException("You have reached the maximum limit for resetting password. Please try again after 24 hours.");
         }
 
@@ -317,56 +318,25 @@ public class UserController {
 
     // -------------------- GET CURRENT USER --------------------
     @GetMapping("/me")
-    public ResponseEntity<?> getMe(HttpServletRequest request) {
-
-        try {
-            final String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                log.warn("Missing or invalid Authorization header");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("status", "error", "message", "Missing or invalid Authorization header"));
-            }
-
-            String token = authHeader.substring(7);
-            String email = jwtService.extractUserEmail(token);
-            Map<String, Object> userData = userService.getCurrentUserFromToken(token, email);
-            log.info("Fetched current user data successfully");
-            System.out.println("userDATA" + userData);
-            return ResponseEntity.ok(Map.of("status", "success", "user", userData));
-
-        } catch (Exception e) {
-            log.error("Error fetching current user: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("status", "error", "message", e.getMessage()));
-        }
+    public ResponseEntity<?> getMe(@AuthenticationPrincipal UserDetails userDetails) {
+        String email = userDetails.getUsername();
+        Map<String, Object> userData = userService.getCurrentUserFromToken(email);
+        log.info("Fetched current user data successfully");
+        return ResponseEntity.ok(Map.of("status", "success", "user", userData));
     }
 
     // -------------------- Change User Name --------------------
     @PutMapping("/updateName")
-    public ResponseEntity<?> changeUserName(@RequestBody ChangeNameRequest changeNameRequest, HttpServletRequest request){
-        try {
-                final String authHeader = request.getHeader("Authorization");
-                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                               return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                       .body(Map.of("status", "error", "message", "Missing or invalid Authorization header"));
-                }
+    public ResponseEntity<?> changeUserName(@RequestBody ChangeNameRequest changeNameRequest, @AuthenticationPrincipal UserDetails userDetails){
 
-                String token = authHeader.substring(7);
-                String email = jwtService.extractUserEmail(token);
-
-                if(userService.changeUserName(email, changeNameRequest)){
-                   return ResponseEntity.ok(
-                           Map.of(
-                                   "message", "userName changed Successfully"
-                           )
-                   );
-                }
-
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("status", "error", "message", e.getMessage()));
+        String email =  userDetails.getUsername();
+        if(userService.changeUserName(email, changeNameRequest)){
+           return ResponseEntity.ok(
+                   Map.of(
+                           "message", "userName changed Successfully"
+                   )
+           );
         }
-
         return ResponseEntity.status(400).body(
                 Map.of(
                 "message", "Something went wrong, unable to change userName"
@@ -375,16 +345,8 @@ public class UserController {
 
     // -------------------- Change Avatar --------------------
     @PutMapping("/updateAvatar")
-    public ResponseEntity<?> changeAvatar(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Missing or invalid Authorization header"));
-        }
-
-        String token = authHeader.substring(7);
-        String email = jwtService.extractUserEmail(token);
+    public ResponseEntity<?> changeAvatar(@RequestParam("file") MultipartFile file, @AuthenticationPrincipal UserDetails userDetails) {
+        String email = userDetails.getUsername();
 
         userService.changeAvatar(email, file);
 
@@ -396,24 +358,59 @@ public class UserController {
     // -------------------- Change Password --------------------
 
     @PutMapping("/changePassword")
-    public ResponseEntity<?> changePassword(
-            @RequestBody ChangePasswordModel model,
-            HttpServletRequest request
-    ) {
-        String authHeader = request.getHeader("Authorization");
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Missing or invalid Authorization header"));
-        }
-
-        String token = authHeader.substring(7);
-        String email = jwtService.extractUserEmail(token);
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordModel model, @AuthenticationPrincipal UserDetails userDetails) {
+        String email = userDetails.getUsername();
 
         userService.updatePassword(email, model);
 
         return ResponseEntity.ok(
                 Map.of("message", "Password changed successfully.")
         );
+    }
+
+    // ---------------- Log out ---------------
+    @GetMapping("/logout")
+    public ResponseEntity<?> logout(@AuthenticationPrincipal UserDetails userDetails){
+        ResponseCookie cookie = userService.logoutUser(userDetails.getUsername());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(Map.of("status", "success", "message", "Logged out!"));
+    }
+
+
+    //------------ Delete Account Request ---------
+    @GetMapping("/request-delete")
+    public ResponseEntity<?> requestDeletion(@AuthenticationPrincipal UserDetails userDetails) {
+        String email = userDetails.getUsername();
+        otpService.sendDeleteAccountOTP(email);
+        return ResponseEntity.ok(Map.of("message", "Verification code sent to email"));
+    }
+
+    //----------- Delete Account Confirm ---------
+    @DeleteMapping("/confirm-delete")
+    public ResponseEntity<?> confirmDeletion(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam String otp) {
+
+        String email = userDetails.getUsername();
+
+        // Verify OTP from Redis
+        if (!otpService.verifyDeleteOTP(email, otp)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Invalid or expired OTP"));
+        }
+
+        // Logout
+        ResponseCookie cookie = userService.logoutUser(email);
+
+        // Complete Data Cleanup
+        userService.deleteUserAccount(email);
+
+        log.info("Account successfully deleted for: {}", email);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(Map.of("status", "success", "message", "Account Deleted Successfully!"));
     }
 }
