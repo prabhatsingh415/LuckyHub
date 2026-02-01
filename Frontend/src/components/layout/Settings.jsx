@@ -1,23 +1,13 @@
-import React, { useState, useRef, useEffect } from "react";
-import {
-  User,
-  Crown,
-  CreditCard,
-  CircleArrowUp,
-  LogOut,
-  Trash2,
-} from "lucide-react";
-import {
-  useDashboardAPIQuery,
-  useChangePasswordMutation,
-  useGetLastPaymentQuery,
-} from "../../Redux/slices/apiSlice";
+import { useState } from "react";
+import { User, LogOut, Trash2 } from "lucide-react";
+import { useDashboardAPIQuery } from "../../Redux/slices/apiSlice";
 import InfoModal from "../../pages/InfoModal";
 import Loader from "../../pages/Loader";
 import { useNavigate } from "react-router-dom";
 import ProfileSection from "../ProfileSection";
 import PasswordSection from "../PasswordSection";
 import SubscriptionSection from "../SubscriptionSection";
+import LastPaymentSection from "../LastPaymentSection";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -34,8 +24,6 @@ export default function Settings() {
     isLoading: dashboardLoading,
     refetch: refetchDashboard,
   } = useDashboardAPIQuery();
-
-  const { data: lastPaymentData } = useGetLastPaymentQuery();
 
   // Loading/Error UI
   if (dashboardLoading) return <Loader />;
@@ -78,57 +66,7 @@ export default function Settings() {
         <SubscriptionSection dashboardData={dashboardData} />
 
         {/* Payment Details */}
-        <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <CreditCard size={18} />
-            <h2 className="text-lg font-medium">Payment Details</h2>
-          </div>
-          <p className="text-sm text-gray-400 mb-6">
-            Your recent payment information
-          </p>
-          <div className="rounded-xl dark:bg-[#060606] bg-[#f2f2f5] dark:text-gray-400 border border-zinc-200 dark:border-zinc-800 p-6">
-            <p className="font-medium mb-4">Last Payment</p>
-
-            {lastPaymentData ? (
-              <div className="grid grid-cols-2 gap-6 text-sm ">
-                <div>
-                  <p className="text-gray-400">Payment ID</p>
-                  <p>{lastPaymentData.paymentId || "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Amount</p>
-                  <p>
-                    {lastPaymentData.amount
-                      ? `₹${lastPaymentData.amount}`
-                      : "N/A"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Subscription Type</p>
-                  <p>{lastPaymentData.subscriptionType || "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Period</p>
-                  <p>
-                    {lastPaymentData.periodStart && lastPaymentData.periodEnd
-                      ? `${lastPaymentData.periodStart} - ${lastPaymentData.periodEnd}`
-                      : "N/A"}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">
-                No payment data available.
-              </p>
-            )}
-
-            {lastPaymentData?.nextBillingDate && (
-              <p className="mt-4 text-sm text-gray-400">
-                Next billing date: {lastPaymentData.nextBillingDate}
-              </p>
-            )}
-          </div>
-        </section>
+        <LastPaymentSection />
 
         {/* Delete Account and logout*/}
         <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6">
