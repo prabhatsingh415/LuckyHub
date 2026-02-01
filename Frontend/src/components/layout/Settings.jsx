@@ -1,19 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   User,
-  Lock,
   Crown,
   CreditCard,
-  Upload,
-  Pencil,
   CircleArrowUp,
   LogOut,
   Trash2,
 } from "lucide-react";
 import {
-  useChangeNameMutation,
   useDashboardAPIQuery,
-  useChangeAvatarMutation,
   useChangePasswordMutation,
   useGetLastPaymentQuery,
 } from "../../Redux/slices/apiSlice";
@@ -21,12 +16,10 @@ import InfoModal from "../../pages/InfoModal";
 import Loader from "../../pages/Loader";
 import { useNavigate } from "react-router-dom";
 import ProfileSection from "../ProfileSection";
+import PasswordSection from "../PasswordSection";
 
 export default function Settings() {
   const navigate = useNavigate();
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [modal, setModal] = useState({
     open: false,
     title: "",
@@ -40,15 +33,8 @@ export default function Settings() {
     isLoading: dashboardLoading,
     refetch: refetchDashboard,
   } = useDashboardAPIQuery();
-  const [
-    changePassword,
-    { isLoading: isChangingPassword, error: changePasswordError },
-  ] = useChangePasswordMutation();
-  const {
-    data: lastPaymentData,
-    isLoading: isLoadingLastPayment,
-    error: lastPaymentError,
-  } = useGetLastPaymentQuery();
+
+  const { data: lastPaymentData } = useGetLastPaymentQuery();
 
   // Loading/Error UI
   if (dashboardLoading) return <Loader />;
@@ -66,50 +52,6 @@ export default function Settings() {
       />
     );
   }
-
-  const handleChangePassword = async () => {
-    setModal({
-      open: true,
-      type: "info",
-      title: "Updating Password",
-      message: "Please wait while we update your password...",
-    });
-
-    try {
-      await changePassword({
-        currentPassword,
-        newPassword,
-        confirmNewPassword: confirmPassword,
-      }).unwrap();
-
-      setModal((prev) => ({ ...prev, open: false }));
-
-      setTimeout(() => {
-        setModal({
-          open: true,
-          type: "success",
-          title: "Success",
-          message: "Password changed successfully!",
-        });
-
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-      }, 100);
-    } catch (err) {
-      setModal((prev) => ({ ...prev, open: false }));
-
-      setTimeout(() => {
-        setModal({
-          open: true,
-          type: "error",
-          title: "Error",
-          message:
-            err?.data?.message || "Something went wrong, please try again!",
-        });
-      }, 100);
-    }
-  };
 
   const handlePlanUpgrade = () => {
     navigate("/upgrade-plan");
@@ -133,129 +75,8 @@ export default function Settings() {
           setModal={setModal}
         />
         {/* Change Password */}
-        <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Lock size={18} />
-            <h2 className="text-lg font-medium">Change Password</h2>
-          </div>
+        <PasswordSection setModal={setModal} />
 
-          <p className="text-sm text-gray-400 mb-6">
-            Update your account password
-          </p>
-
-          <div className="space-y-4 max-w-xl">
-            <input
-              type="password"
-              placeholder="Current password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full rounded-lg dark:bg-[#060606] bg-[#f2f2f5] dark:text-gray-400 border border-zinc-200 dark:border-zinc-800 px-4 py-2"
-            />
-
-            <input
-              type="password"
-              placeholder="New password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full rounded-lg dark:bg-[#060606] bg-[#f2f2f5] dark:text-gray-400 border border-zinc-200 dark:border-zinc-800 px-4 py-2"
-            />
-
-            {/* Password rules */}
-            {newPassword && (
-              <ul className="text-xs text-gray-400 space-y-1">
-                <li
-                  className={
-                    newPassword.length >= 8 ? "text-green-500" : "text-red-500"
-                  }
-                >
-                  • At least 8 characters
-                </li>
-                <li
-                  className={
-                    /[A-Z]/.test(newPassword)
-                      ? "text-green-500"
-                      : "text-red-500"
-                  }
-                >
-                  • One uppercase letter
-                </li>
-                <li
-                  className={
-                    /[a-z]/.test(newPassword)
-                      ? "text-green-500"
-                      : "text-red-500"
-                  }
-                >
-                  • One lowercase letter
-                </li>
-                <li
-                  className={
-                    /[0-9]/.test(newPassword)
-                      ? "text-green-500"
-                      : "text-red-500"
-                  }
-                >
-                  • One number
-                </li>
-                <li
-                  className={
-                    /[^A-Za-z0-9]/.test(newPassword)
-                      ? "text-green-500"
-                      : "text-red-500"
-                  }
-                >
-                  • One special character
-                </li>
-              </ul>
-            )}
-
-            <input
-              type="password"
-              placeholder="Confirm new password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full rounded-lg dark:bg-[#060606] bg-[#f2f2f5] dark:text-gray-400 border border-zinc-200 dark:border-zinc-800 px-4 py-2"
-            />
-
-            {confirmPassword && newPassword !== confirmPassword && (
-              <p className="text-sm text-red-500">
-                New password and confirm password do not match
-              </p>
-            )}
-          </div>
-
-          <div className="flex justify-end mt-6">
-            <button
-              onClick={handleChangePassword}
-              disabled={
-                !currentPassword ||
-                !newPassword ||
-                !confirmPassword ||
-                newPassword !== confirmPassword ||
-                newPassword.length < 8 ||
-                !/[A-Z]/.test(newPassword) ||
-                !/[a-z]/.test(newPassword) ||
-                !/[0-9]/.test(newPassword) ||
-                !/[^A-Za-z0-9]/.test(newPassword)
-              }
-              className={`rounded-lg px-6 py-2 font-medium transition ${
-                !currentPassword ||
-                !newPassword ||
-                !confirmPassword ||
-                newPassword !== confirmPassword ||
-                newPassword.length < 8 ||
-                !/[A-Z]/.test(newPassword) ||
-                !/[a-z]/.test(newPassword) ||
-                !/[0-9]/.test(newPassword) ||
-                !/[^A-Za-z0-9]/.test(newPassword)
-                  ? "bg-zinc-200 dark:bg-zinc-700 cursor-not-allowed"
-                  : "bg-orange-500 hover:bg-orange-600"
-              }`}
-            >
-              Update Password
-            </button>
-          </div>
-        </section>
         {/* Subscription */}
         <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6">
           <div className="flex items-center gap-2 mb-4">
