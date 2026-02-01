@@ -1,5 +1,6 @@
 import { CreditCard } from "lucide-react";
 import { useGetLastPaymentQuery } from "../Redux/slices/apiSlice";
+
 function LastPaymentSection() {
   const { data: lastPaymentData } = useGetLastPaymentQuery();
   return (

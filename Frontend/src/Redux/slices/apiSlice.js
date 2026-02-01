@@ -58,9 +58,6 @@ export const apiSlice = createApi({
       query: () => ({
         url: "/user/me",
         method: "GET",
-        keepUnusedDataFor: 300, // keep cache for 5 minutes
-        refetchOnFocus: false,
-        refetchOnReconnect: false,
       }),
     }),
     History: builder.query({
@@ -117,6 +114,45 @@ export const apiSlice = createApi({
       }),
       providesTags: ["Subscription"],
     }),
+
+    createOrder: builder.mutation({
+      query: (planName) => ({
+        url: "/subscription/createOrder",
+        method: "POST",
+        body: { planName },
+      }),
+      providesTags: ["Subscription"],
+    }),
+
+    verifyPayment: builder.mutation({
+      query: (paymentData) => ({
+        url: "/subscription/verifyPayment",
+        method: "POST",
+        body: paymentData,
+      }),
+      providesTags: ["Subscription"],
+    }),
+
+    logout: builder.mutation({
+      query: () => ({
+        url: "/user/logout",
+        method: "POST",
+      }),
+    }),
+
+    requestDeleteOTP: builder.mutation({
+      query: () => ({
+        url: "/user/request-delete",
+        method: "POST",
+      }),
+    }),
+
+    confirmDelete: builder.mutation({
+      query: (otp) => ({
+        url: `/user/confirm-delete?otp=${otp}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
@@ -136,4 +172,9 @@ export const {
   useGetLastPaymentQuery,
   useGetWinnersMutation,
   useGetSubscriptionQuery,
+  useCreateOrderMutation,
+  useVerifyPaymentMutation,
+  useLogoutMutation,
+  useRequestDeleteOTPMutation,
+  useConfirmDeleteMutation,
 } = apiSlice;

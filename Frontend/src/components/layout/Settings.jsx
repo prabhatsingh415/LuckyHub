@@ -1,16 +1,14 @@
 import { useState } from "react";
-import { User, LogOut, Trash2 } from "lucide-react";
 import { useDashboardAPIQuery } from "../../Redux/slices/apiSlice";
 import InfoModal from "../../pages/InfoModal";
 import Loader from "../../pages/Loader";
-import { useNavigate } from "react-router-dom";
 import ProfileSection from "../ProfileSection";
 import PasswordSection from "../PasswordSection";
 import SubscriptionSection from "../SubscriptionSection";
 import LastPaymentSection from "../LastPaymentSection";
+import AccountActionsSection from "../AccountActionsSection";
 
 export default function Settings() {
-  const navigate = useNavigate();
   const [modal, setModal] = useState({
     open: false,
     title: "",
@@ -68,56 +66,8 @@ export default function Settings() {
         {/* Payment Details */}
         <LastPaymentSection />
 
-        {/* Delete Account and logout*/}
-        <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <User size={18} />
-            <h2 className="text-lg font-medium">Account Actions</h2>
-          </div>
-          <p className="text-sm text-gray-400 mb-6">
-            Irreversible actions for your account
-          </p>
-
-          <div className="flex flex-col gap-6">
-            <div className="flex justify-between rounded-xl dark:bg-[#060606] bg-[#f2f2f5] dark:text-gray-400 border border-zinc-200 dark:border-zinc-800 p-6">
-              <div className="">
-                <h2 className="text-white">Logout</h2>
-                <p className="text-sm text-gray-500">
-                  Sign out from your account on this device
-                </p>
-              </div>
-
-              <button
-                onClick={console.log("clicked")}
-                className="w-fit rounded-lg bg-zinc-950 border border-zinc-800  px-4 py-2 text-white hover:bg-zinc-900 mt-4"
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <LogOut size={16} />
-                  <span>Logout</span>
-                </div>
-              </button>
-            </div>
-
-            <div className="flex justify-between rounded-xl dark:bg-[#060606] bg-[#f2f2f5] dark:text-gray-400 border border-zinc-200 dark:border-zinc-800 p-6">
-              <div className="">
-                <h2 className="text-white">Delete Account</h2>
-                <p className="text-sm text-gray-500">
-                  Permanently delete your account and all associated data
-                </p>
-              </div>
-
-              <button
-                onClick={console.log("clicked")}
-                className="w-fit rounded-lg bg-red-900 px-4 py-2 text-white hover:bg-red-950"
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <Trash2 size={16} />
-                  <span>Delete Account</span>
-                </div>
-              </button>
-            </div>
-          </div>
-        </section>
+        {/* Account Actions Section */}
+        <AccountActionsSection setModal={setModal} />
       </div>
 
       {modal.open && (
@@ -131,17 +81,6 @@ export default function Settings() {
           onOk={() => setModal({ ...modal, open: false })}
         />
       )}
-    </div>
-  );
-}
-
-function Limit({ label, value }) {
-  return (
-    <div className="flex items-center justify-between rounded-xl dark:bg-[#060606] bg-[#f2f2f5] dark:tex t-gray-400 border border-zinc-200 dark:border-zinc-800  p-4">
-      <p>{label}</p>
-      <span className="rounded-full dark:bg-[#060606] bg-[#f2f2f5] dark:text-gray-400 px-3 py-1 text-sm">
-        {value}
-      </span>
     </div>
   );
 }
