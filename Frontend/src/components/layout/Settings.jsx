@@ -7,6 +7,8 @@ import {
   Upload,
   Pencil,
   CircleArrowUp,
+  LogOut,
+  Trash2,
 } from "lucide-react";
 import {
   useChangeNameMutation,
@@ -18,16 +20,10 @@ import {
 import InfoModal from "../../pages/InfoModal";
 import Loader from "../../pages/Loader";
 import { useNavigate } from "react-router-dom";
+import ProfileSection from "../ProfileSection";
 
 export default function Settings() {
   const navigate = useNavigate();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
-  const [editSnapshot, setEditSnapshot] = useState({
-    firstName: "",
-    lastName: "",
-  });
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -38,19 +34,12 @@ export default function Settings() {
     type: "info",
   });
 
-  const [avatarUploading, setAvatarUploading] = useState(false);
-
-  const fileInputRef = useRef();
-
   const {
     data: dashboardData,
     error: dashboardError,
     isLoading: dashboardLoading,
     refetch: refetchDashboard,
   } = useDashboardAPIQuery();
-
-  const [changeName, { isLoading: isChangingName }] = useChangeNameMutation();
-  const [changeAvatar] = useChangeAvatarMutation();
   const [
     changePassword,
     { isLoading: isChangingPassword, error: changePasswordError },
@@ -60,85 +49,6 @@ export default function Settings() {
     isLoading: isLoadingLastPayment,
     error: lastPaymentError,
   } = useGetLastPaymentQuery();
-
-  // Load user data once dashboardData is available
-  useEffect(() => {
-    if (dashboardData?.user) {
-      setFirstName(dashboardData.user.firstName);
-      setLastName(dashboardData.user.lastName);
-    }
-  }, [dashboardData]);
-
-  // Handle name update
-  const handleUpdateName = async () => {
-    try {
-      await changeName({ firstName, lastName }).unwrap();
-      setIsEditing(false);
-      setModal({
-        open: true,
-        type: "success",
-        title: "Success",
-        message: "Username updated successfully!",
-      });
-      refetchDashboard(); // Refresh dashboard data
-    } catch (err) {
-      setModal({
-        open: true,
-        type: "error",
-        title: "Error",
-        message:
-          err?.data?.message || "Something went wrong, please try again!",
-      });
-    }
-  };
-
-  // Avatar upload
-  const handleAvatarClick = () => {
-    fileInputRef.current.click();
-  };
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    setAvatarUploading(true);
-    setModal({
-      open: true,
-      type: "info",
-      title: "Uploading",
-      message: "Updating your profile picture...",
-    });
-
-    try {
-      await changeAvatar(formData).unwrap();
-
-      setModal((prev) => ({ ...prev, open: false }));
-
-      await refetchDashboard();
-      setModal({
-        open: true,
-        type: "success",
-        title: "Success",
-        message: "Profile picture updated successfully!",
-      });
-    } catch (err) {
-      setModal((prev) => ({ ...prev, open: false }));
-      setTimeout(() => {
-        setModal({
-          open: true,
-          type: "error",
-          title: "Upload Failed",
-          message: err?.data?.message || "Failed to upload avatar. Try again.",
-        });
-      }, 0);
-    } finally {
-      setAvatarUploading(false);
-      e.target.value = ""; // Reset file input
-    }
-  };
 
   // Loading/Error UI
   if (dashboardLoading) return <Loader />;
@@ -217,134 +127,11 @@ export default function Settings() {
 
       <div className="space-y-8 max-w-5xl">
         {/* Profile Information */}
-        <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <User size={18} />
-            <h2 className="text-lg font-medium">Profile Information</h2>
-          </div>
-
-          <p className="text-sm text-gray-400 mb-6">
-            Update your personal information and profile picture
-          </p>
-
-          {/* Avatar */}
-          <div className="flex items-center gap-6 mb-6">
-            <img
-              src={dashboardData?.user?.avatarUrl}
-              alt="avatar"
-              className="h-20 w-20 rounded-full object-cover"
-            />
-            <button
-              onClick={handleAvatarClick}
-              className="flex items-center gap-2 rounded-lg border-zinc-200 dark:border-zinc-800 px-4 py-2 text-sm hover:bg-white/10"
-            >
-              <Upload size={16} />{" "}
-              {avatarUploading ? "Uploading..." : "Change Picture"}
-            </button>
-            <input
-              type="file"
-              accept="image/png, image/jpeg, image/webp"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </div>
-
-          {/* NAME FIELDS */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="text-sm dark:text-gray-400 flex items-center justify-between">
-                First Name
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditSnapshot({ firstName, lastName });
-                    setIsEditing(true);
-                  }}
-                  className="dark:text-gray-400 hover:text-orange-600"
-                >
-                  <Pencil size={14} />
-                </button>
-              </label>
-
-              <input
-                type="text"
-                value={firstName}
-                disabled={!isEditing}
-                onChange={(e) => setFirstName(e.target.value)}
-                className={`mt-2 w-full rounded-lg border px-4 py-2 focus:outline-none ${
-                  isEditing
-                    ? "border-zinc-900 dark:border-amber-50 dark:bg-[#050505]"
-                    : "dark:bg-[#111111] bg-[#f2f2f5] dark:text-gray-400 border-zinc-200 dark:border-zinc-800"
-                }`}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm dark:text-gray-400">Last Name</label>
-              <input
-                type="text"
-                value={lastName}
-                disabled={!isEditing}
-                onChange={(e) => setLastName(e.target.value)}
-                className={`mt-2 w-full rounded-lg border px-4 py-2 focus:outline-none ${
-                  isEditing
-                    ? "border-zinc-900 dark:border-amber-50 dark:bg-[#050505]"
-                    : "dark:bg-[#111111] bg-[#f2f2f5] dark:text-gray-400 border-zinc-200 dark:border-zinc-800"
-                }`}
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="text-sm dark:text-gray-400">Email</label>
-              <input
-                type="email"
-                value={dashboardData?.user?.email || ""}
-                disabled
-                className="mt-2 w-full rounded-lg dark:bg-[#111111] bg-[#f2f2f5] border border-zinc-200 dark:border-zinc-800 px-4 py-2 text-gray-500"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Email cannot be changed.
-              </p>
-            </div>
-          </div>
-
-          {/* ACTIONS */}
-          <div className="flex justify-end gap-3 mt-6">
-            {isEditing && (
-              <button
-                type="button"
-                onClick={() => {
-                  setFirstName(editSnapshot.firstName);
-                  setLastName(editSnapshot.lastName);
-                  setIsEditing(false);
-                }}
-                className="rounded-lg border border-zinc-200 dark:border-zinc-800 px-6 py-2 hover:bg-zinc-200 dark:hover:bg-white/10"
-              >
-                Cancel
-              </button>
-            )}
-
-            <button
-              type="button"
-              disabled={
-                !isEditing ||
-                (firstName === editSnapshot.firstName &&
-                  lastName === editSnapshot.lastName)
-              }
-              onClick={handleUpdateName}
-              className={`rounded-lg px-6 py-2 font-medium ${
-                !isEditing ||
-                (firstName === editSnapshot.firstName &&
-                  lastName === editSnapshot.lastName)
-                  ? "bg-zinc-200 dark:bg-zinc-700 cursor-not-allowed"
-                  : "bg-orange-500 hover:bg-orange-600"
-              }`}
-            >
-              {isChangingName ? "Saving..." : "Save Changes"}
-            </button>
-          </div>
-        </section>
+        <ProfileSection
+          dashboardData={dashboardData}
+          refetchDashboard={refetchDashboard}
+          setModal={setModal}
+        />
         {/* Change Password */}
         <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6">
           <div className="flex items-center gap-2 mb-4">
@@ -487,13 +274,13 @@ export default function Settings() {
                 <p className="font-medium">Current Plan</p>
                 <span className="mt-1 inline-block rounded-full bg-red-500/20 px-3 py-1 text-xs text-red-400">
                   {dashboardData?.user?.subscriptionType || "FREE"}
-                  {console.log(dashboardData?.user?.subscriptionType)}
                 </span>
               </div>
             </div>
             {dashboardData?.user?.subscriptionType !== "DIAMOND" &&
-              dashboardData?.user?.subscriptionType === "GOLD" &&
-              dashboardData?.user?.remainingGiveaways <= 0 && (
+              (dashboardData?.user?.subscriptionType === "FREE" ||
+                (dashboardData?.user?.subscriptionType === "GOLD" &&
+                  dashboardData?.user?.remainingGiveaways <= 0)) && (
                 <button
                   onClick={handlePlanUpgrade}
                   className="flex gap-2 bg-[#FF3E30] px-4 p-2 text-white font-bold rounded-xl hover:scale-105 hover:bg-orange-700"
@@ -532,7 +319,7 @@ export default function Settings() {
           <p className="text-sm text-gray-400 mb-6">
             Your recent payment information
           </p>
-          <div className="rounded-xl dark:bg-[#060606] bg-[#f2f2f5] dark:text-gray-400 border border-zinc-200 dark:border-zinc-800  p-6">
+          <div className="rounded-xl dark:bg-[#060606] bg-[#f2f2f5] dark:text-gray-400 border border-zinc-200 dark:border-zinc-800 p-6">
             <p className="font-medium mb-4">Last Payment</p>
 
             {lastPaymentData ? (
@@ -563,7 +350,7 @@ export default function Settings() {
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-500">
                 No payment data available.
               </p>
             )}
@@ -573,6 +360,57 @@ export default function Settings() {
                 Next billing date: {lastPaymentData.nextBillingDate}
               </p>
             )}
+          </div>
+        </section>
+
+        {/* Delete Account and logout*/}
+        <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <User size={18} />
+            <h2 className="text-lg font-medium">Account Actions</h2>
+          </div>
+          <p className="text-sm text-gray-400 mb-6">
+            Irreversible actions for your account
+          </p>
+
+          <div className="flex flex-col gap-6">
+            <div className="flex justify-between rounded-xl dark:bg-[#060606] bg-[#f2f2f5] dark:text-gray-400 border border-zinc-200 dark:border-zinc-800 p-6">
+              <div className="">
+                <h2 className="text-white">Logout</h2>
+                <p className="text-sm text-gray-500">
+                  Sign out from your account on this device
+                </p>
+              </div>
+
+              <button
+                onClick={console.log("eeee Ellvish bhai !!")}
+                className="w-fit rounded-lg bg-zinc-950 border border-zinc-800  px-4 py-2 text-white hover:bg-zinc-900 mt-4"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <LogOut size={16} />
+                  <span>Logout</span>
+                </div>
+              </button>
+            </div>
+
+            <div className="flex justify-between rounded-xl dark:bg-[#060606] bg-[#f2f2f5] dark:text-gray-400 border border-zinc-200 dark:border-zinc-800 p-6">
+              <div className="">
+                <h2 className="text-white">Delete Account</h2>
+                <p className="text-sm text-gray-500">
+                  Permanently delete your account and all associated data
+                </p>
+              </div>
+
+              <button
+                onClick={console.log("eeee Ellvish bhai !!")}
+                className="w-fit rounded-lg bg-red-900 px-4 py-2 text-white hover:bg-red-950"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <Trash2 size={16} />
+                  <span>Delete Account</span>
+                </div>
+              </button>
+            </div>
           </div>
         </section>
       </div>
