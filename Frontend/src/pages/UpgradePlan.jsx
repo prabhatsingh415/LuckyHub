@@ -3,7 +3,7 @@ import { Crown, Gift, CircleStar, Gem } from "lucide-react";
 import PlanCard from "../components/PlanCard";
 import InfoModal from "../pages/InfoModal";
 import { useDashboardAPIQuery } from "../Redux/slices/apiSlice";
-import { useNavigate } from "react-router-dom";
+import { usePayment } from "../hook/usePayment";
 
 const subscriptionPlan = [
   {
