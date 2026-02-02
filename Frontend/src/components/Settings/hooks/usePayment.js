@@ -1,7 +1,7 @@
 import {
   useCreateOrderMutation,
   useVerifyPaymentMutation,
-} from "../Redux/slices/apiSlice";
+} from "../../../Redux/slices/apiSlice";
 
 export const usePayment = (userEmail, setModal) => {
   const [createOrder] = useCreateOrderMutation();

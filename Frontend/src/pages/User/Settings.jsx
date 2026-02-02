@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useDashboardAPIQuery } from "../../Redux/slices/apiSlice";
-import InfoModal from "../../pages/InfoModal";
-import Loader from "../../pages/Loader";
-import ProfileSection from "../ProfileSection";
-import PasswordSection from "../PasswordSection";
-import SubscriptionSection from "../SubscriptionSection";
-import LastPaymentSection from "../LastPaymentSection";
-import AccountActionsSection from "../AccountActionsSection";
+import { InfoModal, Loader } from "../../components/Common";
+import {
+  ProfileSection,
+  PasswordSection,
+  SubscriptionSection,
+  LastPaymentSection,
+  AccountActionsSection,
+} from "../../components/Settings";
 
 export default function Settings() {
   const [modal, setModal] = useState({

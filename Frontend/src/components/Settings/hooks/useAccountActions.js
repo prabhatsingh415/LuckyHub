@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import {
   apiSlice,
   useLogoutMutation,
   useConfirmDeleteMutation,
   useRequestDeleteOTPMutation,
-} from "../Redux/slices/apiSlice";
+} from "../../../Redux/slices/apiSlice";
 
 export const useAccountActions = (setModal) => {
   const dispatch = useDispatch();

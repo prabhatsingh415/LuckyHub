@@ -1,7 +1,7 @@
 import {
   useChangeAvatarMutation,
   useChangeNameMutation,
-} from "../Redux/slices/apiSlice";
+} from "../../../Redux/slices/apiSlice";
 
 export const useProfileLogic = (
   setModal,

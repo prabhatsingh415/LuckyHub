@@ -1,4 +1,4 @@
-import { useChangePasswordMutation } from "../Redux/slices/apiSlice";
+import { useChangePasswordMutation } from "../../../Redux/slices/apiSlice";
 import { useState } from "react";
 
 export const usePasswordLogic = (setModal) => {
