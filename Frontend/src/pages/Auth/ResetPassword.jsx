@@ -1,10 +1,9 @@
 import { useSearchParams } from "react-router-dom";
-import { useSavePasswordMutation } from "../Redux/slices/apiSlice";
+import { useSavePasswordMutation } from "../../Redux/slices/apiSlice";
 import { useForm } from "react-hook-form";
-import { logoDark, logoLight } from "..";
+import { logoDark, logoLight } from "../..";
 import { Lock } from "lucide-react";
-import Loader from "./Loader";
-import Form from "../components/Form";
+import { Form, Loader } from "../../components/Common";
 import { useSelector } from "react-redux";
 
 function ResetPassword() {

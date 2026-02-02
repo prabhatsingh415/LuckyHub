@@ -2,7 +2,7 @@ import { RouterProvider } from "react-router-dom";
 import { useSelector } from "react-redux";
 import AuthInitializer from "./app/AuthInitializer.jsx";
 import { router } from "./app/router.jsx";
-import Loader from "./pages/Loader";
+import { Loader } from "./components/Common";
 import "./App.css";
 import { useEffect } from "react";
 

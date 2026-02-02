@@ -1,11 +1,9 @@
-import { logoDark, logoLight } from "..";
-import Form from "../components/Form";
+import { logoDark, logoLight } from "../..";
+import { Form, Loader, InfoModal } from "../../components/Common";
 import { useForm } from "react-hook-form";
 import { useSelector } from "react-redux";
 import { Lock, Mail, User } from "lucide-react";
-import { useSignUpMutation } from "../Redux/slices/apiSlice";
-import Loader from "./Loader";
-import InfoModal from "./InfoModal";
+import { useSignUpMutation } from "../../Redux/slices/apiSlice";
 import { useEffect } from "react";
 
 function SignUp() {
@@ -14,7 +12,10 @@ function SignUp() {
     register,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm();
+
+  const password = watch("password", "");
 
   const formData = [
     {
@@ -30,7 +31,7 @@ function SignUp() {
       register: register("firstName", {
         required: "First name is required",
         minLength: { value: 2, message: "Too short" },
-        maxLength: { value: 30, message: "Too long" },
+        maxLength: { value: 50, message: "Max 50 characters allowed" },
         message: "Invalid name",
       }),
     },
@@ -47,7 +48,7 @@ function SignUp() {
       register: register("lastName", {
         required: "Last name is required",
         minLength: { value: 2, message: "Too short" },
-        maxLength: { value: 30, message: "Too long" },
+        maxLength: { value: 50, message: "Max 50 characters allowed" },
         message: "Invalid name",
       }),
     },
@@ -67,6 +68,7 @@ function SignUp() {
           value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
           message: "Invalid email address",
         },
+        maxLength: { value: 100, message: "Email too long" },
       }),
     },
     {
@@ -81,17 +83,10 @@ function SignUp() {
       placeholder: "Create a password",
       register: register("password", {
         required: "Password is required",
-        minLength: {
-          value: 6,
-          message: "Password must be at least 6 characters",
-        },
-        maxLength: {
-          value: 30,
-          message: "Password must be less than 30 characters",
-        },
         pattern: {
-          value: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$/,
-          message: "Password must contain letters and numbers",
+          value:
+            /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\S+$).{8,50}$/,
+          message: "Password does not meet requirements",
         },
       }),
     },
@@ -114,6 +109,7 @@ function SignUp() {
       localStorage.setItem("SignUpToken", data.token);
     }
   }, [isSuccess, data]);
+
   return (
     <div className="w-full flex flex-col  md:mt-32 md:ml-5 lg:mt-0 lg:ml-0 justify-center items-center dark:text-white">
       {/* Loader */}
@@ -167,6 +163,49 @@ function SignUp() {
           isContainsGoogleSignIn={true}
           onSubmit={handleSubmit(handleSignup)}
         />
+        {password && (
+          <div className="w-full px-10 -mt-4 mb-4 text-left">
+            <ul className="text-[10px] md:text-xs text-gray-400 space-y-1">
+              <li
+                className={
+                  password.length >= 8 ? "text-green-500" : "text-red-500"
+                }
+              >
+                • At least 8 characters
+              </li>
+              <li
+                className={
+                  /[A-Z]/.test(password) ? "text-green-500" : "text-red-500"
+                }
+              >
+                • One uppercase letter
+              </li>
+              <li
+                className={
+                  /[a-z]/.test(password) ? "text-green-500" : "text-red-500"
+                }
+              >
+                • One lowercase letter
+              </li>
+              <li
+                className={
+                  /[0-9]/.test(password) ? "text-green-500" : "text-red-500"
+                }
+              >
+                • One number
+              </li>
+              <li
+                className={
+                  /[^A-Za-z0-9]/.test(password)
+                    ? "text-green-500"
+                    : "text-red-500"
+                }
+              >
+                • One special character (@#$%^&+=)
+              </li>
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

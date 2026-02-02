@@ -1,9 +1,10 @@
 import { ArrowRight } from "lucide-react";
 import React from "react";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 function CTASection() {
-  const theme = localStorage.getItem("theme");
+  const theme = useSelector((state) => state.theme.mode);
   const navigate = useNavigate();
   return (
     <div className="flex flex-col justify-center items-center p-6 px-8 md:p-12 md:px-16 gap-8 dark:text-white my-8">

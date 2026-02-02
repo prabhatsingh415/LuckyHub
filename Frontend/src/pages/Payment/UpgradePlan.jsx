@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Crown, Gift, CircleStar, Gem } from "lucide-react";
-import PlanCard from "../components/PlanCard";
-import InfoModal from "../pages/InfoModal";
-import { useDashboardAPIQuery } from "../Redux/slices/apiSlice";
-import { usePayment } from "../hook/usePayment";
+import { PlanCard, InfoModal } from "../../components/Common";
+import { useDashboardAPIQuery } from "../../Redux/slices/apiSlice";
+import { usePayment } from "../../components/Settings/hooks/usePayment";
 
 const subscriptionPlan = [
   {

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { useDashboardAPIQuery } from "../Redux/slices/apiSlice";
 import { setAuth, logout } from "../Redux/slices/authSlice";
-import Loader from "../pages/Loader";
+import { Loader } from "../components/Common";
 import { useSelector } from "react-redux";
 
 const AuthInitializer = ({ children }) => {

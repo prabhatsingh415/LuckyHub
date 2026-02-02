@@ -24,8 +24,20 @@ function PlanCard({ plan, onClick, isCurrent }) {
         {plan.icon}
       </div>
 
-      <h1 className="text-3xl font-semibold">{plan.name}</h1>
-      <p className="text-gray-500 dark:text-gray-300 text-center">
+      <h1 className="text-2xl font-semibold">{plan.name}</h1>
+      <h1 className="text-3xl font-bold mb-2">
+        {plan.price}
+        {plan.name !== "Free" ? (
+          <span className="text-lg font-medium text-gray-500 dark:text-gray-400">
+            /month
+          </span>
+        ) : (
+          <span className="text-lg font-medium text-gray-500 dark:text-gray-400">
+            /forever
+          </span>
+        )}
+      </h1>
+      <p className="text-gray-500 dark:text-gray-300 text-center mb-2">
         {plan.description}
       </p>
 

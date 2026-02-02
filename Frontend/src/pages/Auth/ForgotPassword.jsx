@@ -1,10 +1,10 @@
-import { logoDark, logoLight } from "..";
-import Form from "../components/Form";
+import { logoDark, logoLight } from "../..";
+import { Form } from "../../components/Common";
 import { useForm } from "react-hook-form";
 import { useSelector } from "react-redux";
 import { ArrowLeft, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useForgotPasswordMutation } from "../Redux/slices/apiSlice";
+import { useForgotPasswordMutation } from "../../Redux/slices/apiSlice";
 
 function ForgotPassword() {
   const theme = useSelector((state) => state.theme.mode);

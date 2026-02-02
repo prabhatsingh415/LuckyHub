@@ -1,0 +1,9 @@
+export { default as Header } from "./Header";
+export { default as Footer } from "./Footer";
+export { default as FeaturesSection } from "./FeaturesSection";
+export { default as FAQSection } from "./FAQ";
+export { default as CTA } from "./CTASection";
+export { default as HeroSection } from "./HeroSection";
+export { default as SubscriptionSection } from "./Subscription";
+export { default as SocialIcon } from "./SocialIcon";
+export { default as WorkingSection } from "./WorkingSection";

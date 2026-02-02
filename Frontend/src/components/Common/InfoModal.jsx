@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import useTimeout from "../hook/useTimeout";
-import { useLazyResendVerificationQuery } from "../Redux/slices/apiSlice";
+import useTimeout from "../../hook/useTimeout";
+import { useLazyResendVerificationQuery } from "../../Redux/slices/apiSlice";
 import Loader from "./Loader";
 
 export default function InfoModal({

@@ -1,23 +1,20 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 
-import LandingPage from "../pages/LandingPage";
-import SignUp from "../pages/SignUp";
-import SignIn from "../pages/SignIn";
-import AppLayout from "../components/layout/AppLayout";
-import Home from "../components/layout/Home";
-import Dashboard from "../components/layout/Dashboard";
-import Settings from "../components/layout/Settings";
+import {
+  SignUp,
+  SignIn,
+  ForgotPassword,
+  ResetPassword,
+  AuthSuccess,
+  VerifyUserPage,
+} from "../pages/Auth";
+import { AppLayout } from "../components/layout";
+import { Home, Dashboard, Settings } from "../pages/User";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import PublicRoute from "./PublicRoute.jsx";
-import VerifyUserPage from "../pages/verifyUserPage.jsx";
-import TermsOfService from "../pages/TermsOfService";
-import PrivacyPolicy from "../pages/PrivacyPolicy";
-import ForgotPassword from "../pages/ForgotPassword";
-import ResetPassword from "../pages/ResetPassword";
-import AuthSuccess from "../pages/AuthSuccess";
-import UpgradePlan from "../pages/UpgradePlan.jsx";
-import Support from "../pages/Support.jsx";
-import ReviewOrder from "../pages/ReviewOrder.jsx";
+import { TermsOfService, PrivacyPolicy } from "../pages/Legal";
+import { UpgradePlan, ReviewOrder } from "../pages/Payment";
+import { Support, LandingPage } from "../pages/General";
 
 export const router = createBrowserRouter([
   { path: "/", element: <PublicRoute element={<LandingPage />} /> },

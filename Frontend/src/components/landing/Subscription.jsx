@@ -1,13 +1,13 @@
 import { useNavigate } from "react-router-dom";
-import PlanCard from "../PlanCard";
-import { CircleCheckBig, CircleStar, Gem, Gift } from "lucide-react";
+import { PlanCard } from "../Common";
+import { CircleStar, Gem, Gift } from "lucide-react";
 
 const subscriptionPlan = [
   {
     id: 1,
     icon: <Gift />,
-    name: "Free",
-    price: "$0/forever",
+    name: "FREE",
+    price: "₹0",
     description: "Perfect for getting started with giveaways",
     features: [
       "3 giveaways per month",
@@ -19,8 +19,8 @@ const subscriptionPlan = [
   {
     id: 2,
     icon: <CircleStar />,
-    name: "Gold",
-    price: "$49/month",
+    name: "GOLD",
+    price: "₹49",
     description: "Ideal for frequent organizers with advanced features",
     features: [
       "10 giveaways per month",
@@ -32,8 +32,8 @@ const subscriptionPlan = [
   {
     id: 3,
     icon: <Gem />,
-    name: "Diamond",
-    price: "$99/month",
+    name: "DIAMOND",
+    price: "₹79",
     description: "Unlimited giveaways and top-tier features for pros",
     features: [
       "Unlimited giveaways",
@@ -46,7 +46,12 @@ const subscriptionPlan = [
 function Subscription() {
   const navigate = useNavigate();
 
-  const handleClick = () => {
+  const handleClick = (planName) => {
+    if (planName === "FREE") {
+      navigate("/signup");
+      return;
+    }
+    localStorage.setItem("redirectEndpoint", `/review-order?plan=${planName}`);
     navigate("/signup");
   };
 
@@ -69,7 +74,7 @@ function Subscription() {
       </div>
       <div className="flex flex-wrap justify-center items-stretch gap-8 w-full max-w-6xl">
         {subscriptionPlan.map((plan) => (
-          <PlanCard onClick={handleClick} plan={plan} />
+          <PlanCard onClick={() => handleClick(plan.name)} plan={plan} />
         ))}
       </div>
     </div>

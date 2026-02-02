@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Check, Crown, ArrowLeft, ShieldCheck } from "lucide-react";
-import SUBSCRIPTION_PLANS from "../../config/subscriptionPlans";
+import SUBSCRIPTION_PLANS from "../../../config/subscriptionPlans";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { usePayment } from "../hook/usePayment";
-import InfoModal from "./InfoModal";
-import { useDashboardAPIQuery } from "../Redux/slices/apiSlice";
-import Loader from "./Loader";
+import { usePayment } from "../../components/Settings/hooks/usePayment";
+import { InfoModal, Loader } from "../../components/Common";
+import { useDashboardAPIQuery } from "../../Redux/slices/apiSlice";
 
 function ReviewOrder() {
   const navigate = useNavigate();

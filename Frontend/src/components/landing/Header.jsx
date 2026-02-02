@@ -1,8 +1,8 @@
 import { useSelector, useDispatch } from "react-redux";
-import { logoDark, logoLight } from "..";
+import { logoDark, logoLight } from "../..";
 import { Link as ScrollLink } from "react-scroll";
 import { Sun, Moon } from "lucide-react";
-import { toggleTheme } from "../Redux/slices/themeSlice";
+import { toggleTheme } from "../../Redux/slices/themeSlice";
 import { useNavigate } from "react-router-dom";
 
 function Header() {

@@ -1,5 +1,5 @@
 import React from "react";
-import { loader } from "..";
+import { loader } from "../..";
 import Lottie from "lottie-react";
 
 export default function Loader() {

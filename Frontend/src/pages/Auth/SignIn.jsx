@@ -1,12 +1,10 @@
-import { logoDark, logoLight } from "..";
-import Form from "../components/Form";
+import { logoDark, logoLight } from "../..";
+import { Form, Loader, InfoModal } from "../../components/Common";
 import { useForm } from "react-hook-form";
 import { useEffect } from "react";
 import { Lock, Mail } from "lucide-react";
 import { useSelector } from "react-redux";
-import { useSignInMutation } from "../Redux/slices/apiSlice";
-import Loader from "./Loader";
-import InfoModal from "./InfoModal";
+import { useSignInMutation } from "../../Redux/slices/apiSlice";
 
 function SignIn() {
   const theme = useSelector((state) => state.theme.mode);

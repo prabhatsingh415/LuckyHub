@@ -1,9 +1,9 @@
-import { logoDark, logoLight } from "..";
+import { logoDark, logoLight } from "../..";
 import { useSelector } from "react-redux";
 import { Link as ScrollLink } from "react-scroll";
 import { useNavigate } from "react-router-dom";
-import SocialIcon from "./SocialIcon";
-import { XIcon, LinkedInIcon } from "..";
+import { SocialIcon } from "./";
+import { XIcon, LinkedInIcon } from "../..";
 
 function Footer() {
   const theme = useSelector((state) => state.theme.mode);
@@ -26,7 +26,7 @@ function Footer() {
           duration={500}
           offset={-70}
           className="hover:text-[var(--orange)] cursor-pointer text-sm"
-          onClick={() => navigate("Terms-of-Service")}
+          onClick={() => navigate("/privacy-policy")}
         >
           Privacy Policy
         </ScrollLink>
@@ -36,7 +36,7 @@ function Footer() {
           duration={500}
           offset={-70}
           className="hover:text-[var(--orange)] cursor-pointer text-sm"
-          onClick={() => navigate("/Privacy-Policy")}
+          onClick={() => navigate("/terms-of-service")}
         >
           Terms of Service
         </ScrollLink>
@@ -46,7 +46,7 @@ function Footer() {
           duration={500}
           offset={-70}
           className="hover:text-[var(--orange)] cursor-pointer text-sm"
-          onClick={() => navigate("/Support")}
+          onClick={() => navigate("/support")}
         >
           Support
         </ScrollLink>

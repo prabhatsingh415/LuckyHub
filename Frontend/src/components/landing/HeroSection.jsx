@@ -1,7 +1,10 @@
 import { Play } from "lucide-react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
 function MainContent() {
-  const theme = localStorage.getItem("theme");
+  const theme = useSelector((state) => state.theme.mode);
+  const navigate = useNavigate();
 
   return (
     <div className="flex flex-col justify-center items-center gap-8 dark:text-white p-8 my-16">
@@ -33,7 +36,10 @@ function MainContent() {
         contests by randomly selecting winners from YouTube video comments.
       </p>
       <div className="flex justify-center items-center gap-4">
-        <button className="px-6 py-2 bg-gradient-to-r from-[#f62a2a] to-[#f7490f] hover:from-[#f62a2a] hover:to-[#e73b02] text-white font-bold rounded-lg ">
+        <button
+          onClick={() => navigate("/signUp")}
+          className="px-6 py-2 bg-gradient-to-r from-[#f62a2a] to-[#f7490f] hover:from-[#f62a2a] hover:to-[#e73b02] text-white font-bold rounded-lg "
+        >
           Start Picking Winners &rarr;
         </button>
 

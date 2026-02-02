@@ -16,7 +16,7 @@ import {
 } from "../../Redux/slices/apiSlice";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
-import InfoModal from "../../pages/InfoModal";
+import { InfoModal } from "../../components/Common";
 
 // --- Reward Options ---
 const REWARD_PLATFORMS = [
@@ -41,7 +41,6 @@ const REWARD_PLATFORMS = [
 ];
 
 function Home() {
-  // --- States ---
   const [urls, setUrls] = useState([""]);
   const [winnersCount, setWinnersCount] = useState("1");
   const [keyword, setKeyword] = useState("");
@@ -79,23 +78,25 @@ function Home() {
 
   const { data: subscriptionData, error: subError } = useGetSubscriptionQuery();
 
-  if (subError) {
-    setModal({
-      open: true,
-      type: "error",
-      title: "Error",
-      message: subError?.data?.message || "Something Went Wrong !",
-    });
-  }
+  useEffect(() => {
+    if (subError) {
+      setModal({
+        open: true,
+        type: "error",
+        title: "Error",
+        message: subError?.data?.message || "Something Went Wrong!",
+      });
+    }
+  }, [subError]);
 
   const getWinnerOptions = () => {
     const max = subscriptionData?.maxWinners;
 
-    // if (!max || max === null || max === undefined) return [];
+    if (!max || max === null || max === undefined) return [1, 2];
 
-    // if (max <= 5) {
-    //   return Array.from({ length: max }, (_, i) => i + 1);
-    // }
+    if (max <= 5) {
+      return Array.from({ length: max }, (_, i) => i + 1);
+    }
 
     return [1, 2, 3, 5, 7, 10, 15, 20];
   };

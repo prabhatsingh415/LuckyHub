@@ -1,8 +1,7 @@
 import { useState, useRef } from "react";
-import Input from "./Input";
+import { Input, InfoModal } from "./";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import InfoModal from "../pages/InfoModal";
 
 export default function Form({
   formData = [],
@@ -178,7 +177,7 @@ export default function Form({
             I agree to the{" "}
             <button
               type="button"
-              onClick={() => navigate("/terms-of-condition")}
+              onClick={() => navigate("/terms-of-service")}
               className="text-[var(--orange)] hover:underline"
             >
               Terms of Service

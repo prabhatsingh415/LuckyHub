@@ -1,10 +1,9 @@
 import {
   useVerifyUserQuery,
   useLazyResendVerificationQuery,
-} from "../Redux/slices/apiSlice";
-import Loader from "../pages/Loader";
+} from "../../Redux/slices/apiSlice";
+import { Loader } from "../../components/Common";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 
 function VerifyUserPage() {
   const [searchParams] = useSearchParams();
@@ -21,11 +20,20 @@ function VerifyUserPage() {
     await triggerResend(token);
   };
 
-  useEffect(() => {
-    if (isSuccess) {
-      localStorage.setItem("isSignIn", "true");
+  const handleContinue = () => {
+    const userEmail = data?.email;
+
+    const redirectEndpoint =
+      localStorage.getItem("redirectEndpoint") || "/home";
+
+    if (userEmail) {
+      localStorage.removeItem(`resendAttempts_${userEmail}`);
+      localStorage.removeItem(`resendTimestamp_${userEmail}`);
     }
-  }, [isSuccess]);
+    localStorage.removeItem("SignUpToken");
+    localStorage.removeItem("redirectEndpoint");
+    window.location.href = redirectEndpoint;
+  };
 
   if (isLoading) return <Loader />;
 
@@ -47,7 +55,6 @@ function VerifyUserPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] text-white px-4">
       <div className="w-full max-w-md text-center bg-gradient-to-br from-[#1a1a1a] to-[#111111] rounded-2xl border border-[#2a2a2a] shadow-[0_0_30px_rgba(255,255,255,0.05)] p-8 animate-scaleIn">
-        {/* Success Case */}
         {isSuccess && (
           <>
             <div className="text-6xl mb-4">🎉</div>
@@ -59,7 +66,7 @@ function VerifyUserPage() {
               to explore LuckyHub.
             </p>
             <button
-              onClick={() => navigate("/")}
+              onClick={handleContinue}
               className="w-full bg-gradient-to-r from-[#ff3333] via-[#ff6b0f] to-[#ff9933] py-2.5 rounded-lg font-semibold hover:opacity-90 transition-all"
             >
               Continue
@@ -67,7 +74,6 @@ function VerifyUserPage() {
           </>
         )}
 
-        {/* Error Case */}
         {isError && (
           <>
             <div className="text-6xl mb-4">⚠️</div>
