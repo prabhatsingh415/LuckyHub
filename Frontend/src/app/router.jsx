@@ -9,7 +9,7 @@ import {
   VerifyUserPage,
 } from "../pages/Auth";
 import { AppLayout } from "../components/layout";
-import { Home, Dashboard, Settings } from "../pages/User";
+import { Home, Dashboard, Settings, History } from "../pages/User";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import PublicRoute from "./PublicRoute.jsx";
 import { TermsOfService, PrivacyPolicy } from "../pages/Legal";
@@ -47,6 +47,10 @@ export const router = createBrowserRouter([
         path: "/settings",
         element: <ProtectedRoute element={<Settings />} />,
       },
+      {
+        path: "/history", 
+        element: <ProtectedRoute element={<History/>} />
+      }
     ],
   },
 ]);
