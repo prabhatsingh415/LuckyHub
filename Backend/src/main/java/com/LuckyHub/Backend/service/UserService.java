@@ -1,51 +1,35 @@
 package com.LuckyHub.Backend.service;
 
+import com.LuckyHub.Backend.entity.PasswordToken;
 import com.LuckyHub.Backend.entity.User;
-import com.LuckyHub.Backend.model.ChangeNameRequest;
-import com.LuckyHub.Backend.model.ChangePasswordModel;
-import com.LuckyHub.Backend.model.UserModel;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.transaction.Transactional;
+import com.LuckyHub.Backend.model.*;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseCookie;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Map;
 import java.util.Optional;
 
 public interface UserService {
-     User save(UserModel userModel);
+
+    User save(UserModel userModel);
 
     void saveVerificationTokenForUser(User user, String token);
-
-    String verifyVerificationToken(String token);
-
-    Map<String, Object> verifyLogin(UserModel userModel);
-    ResponseEntity<?>resendVerifyToken(String oldToken,  final HttpServletRequest request, String url, User user);
 
     Optional<User> findUserByEmail(@Email(message = "Invalid email address") @NotBlank(message = "Email cannot be empty!") String email);
 
     void createResetPasswordToken(User user, String token);
 
-    String GeneratePasswordResetURL(String url, String token);
+    boolean validatePasswordToken(PasswordToken passwordToken);
 
-    String validatePasswordToken(String token);
-
-    Optional<User> getUserByPasswordResetToken(String token);
-
-    void changePassword(User user, @NotBlank(message = "Password cannot be empty") String newPassword);
-
-    void deletePasswordToken(String token);
-
-    Map<String, Object> getCurrentUserFromToken(String email);
+    DashboardResponse getCurrentUserFromToken(String email);
 
     Long findUserIdByEmail(String  email);
 
     Optional<User> getUserById(Long id);
 
-    boolean changeUserName(String email, ChangeNameRequest request);
+    void changeUserName(String email, ChangeNameRequest request);
 
     void changeAvatar(String email, MultipartFile file);
 
@@ -55,5 +39,19 @@ public interface UserService {
 
     ResponseCookie logoutUser(String email);
 
-    void deleteUserAccount(String email);
+    String registerNewUser(@Valid UserModel userModel);
+
+    AuthVerificationResponse completeVerification(String token);
+
+    TokenResponse loginUser(LoginRequest loginRequest);
+
+    TokenResponse rotateRefreshToken(String refreshTokenStr);
+
+    void resendVerificationEmail(String oldToken);
+
+    void handleForgotPassword(ForgotPasswordRequest forgotPasswordRequest);
+
+    void savePassword(String token, ResetPasswordRequest resetPasswordRequest);
+
+    ResponseCookie processAccountDeletion(String email, String otp);
 }
