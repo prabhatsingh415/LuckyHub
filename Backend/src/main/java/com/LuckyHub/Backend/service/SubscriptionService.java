@@ -1,14 +1,16 @@
 package com.LuckyHub.Backend.service;
 
 import com.LuckyHub.Backend.entity.Payment;
+import com.LuckyHub.Backend.entity.User;
+import com.LuckyHub.Backend.model.SubscriptionResponse;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
 
+import java.math.BigDecimal;
+
 public interface SubscriptionService {
-    boolean verifyTheAmount(int subAmount);
+    SubscriptionTypes getPlanByAmount(BigDecimal subAmount);
 
-    SubscriptionTypes getPlanByAmount(int subAmount);
+    SubscriptionResponse getUserSubscription(User user);
 
-    Object getUserSubscription(String email);
-
-    void upgradeSubscription(Payment payment);
+    void upgradeSubscription(User user, Payment payment);
 }

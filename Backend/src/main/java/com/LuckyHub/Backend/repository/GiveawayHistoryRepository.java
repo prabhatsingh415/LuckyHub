@@ -11,11 +11,13 @@ import java.util.List;
 
 @Repository
 public interface GiveawayHistoryRepository extends JpaRepository<GiveawayHistory, Long> {
-    List<GiveawayHistory> findByUserIdOrderByCreatedAtAsc(Long userId);
+    List<GiveawayHistory> findByUserIdOrderByCreatedAtDesc(Long userId);
     List<GiveawayHistory> findByUserId(Long userId);
 
     @Modifying
     @Transactional
     @Query("DELETE FROM GiveawayHistory g WHERE g.userId = :userId")
     void deleteByUserId(Long userId);
+
 }
+

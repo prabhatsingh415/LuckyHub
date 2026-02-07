@@ -13,7 +13,7 @@ import java.util.Optional;
 
 public interface UserService {
 
-    User save(UserModel userModel);
+    User save(UserModel userModel, boolean isVerified);
 
     void saveVerificationTokenForUser(User user, String token);
 
@@ -24,8 +24,6 @@ public interface UserService {
     boolean validatePasswordToken(PasswordToken passwordToken);
 
     DashboardResponse getCurrentUserFromToken(String email);
-
-    Long findUserIdByEmail(String  email);
 
     Optional<User> getUserById(Long id);
 
@@ -54,4 +52,11 @@ public interface UserService {
     void savePassword(String token, ResetPasswordRequest resetPasswordRequest);
 
     ResponseCookie processAccountDeletion(String email, String otp);
+
+    void saveUser(User user);
+
+    Long findUserIdByEmail(String email);
+
+    void resetAllWinnersCount();
 }
+

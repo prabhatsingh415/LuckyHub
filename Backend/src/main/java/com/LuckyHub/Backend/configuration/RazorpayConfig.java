@@ -1,4 +1,4 @@
-package com.LuckyHub.Backend.Configuration;
+package com.LuckyHub.Backend.configuration;
 
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;

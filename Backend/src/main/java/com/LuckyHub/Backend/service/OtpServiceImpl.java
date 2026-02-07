@@ -2,6 +2,7 @@ package com.LuckyHub.Backend.service;
 
 
 import com.LuckyHub.Backend.event.AccountDeleteEvent;
+import com.LuckyHub.Backend.exception.InvalidOTPException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -33,14 +34,14 @@ public class OtpServiceImpl implements OtpService{
     }
 
     @Override
-    public boolean verifyDeleteOTP(String email, String otp) {
+    public void verifyDeleteOTP(String email, String otp) {
         String key = OTP_PREFIX + email;
         String storedOtp = redisTemplate.opsForValue().get(key);
 
-        if (storedOtp != null && storedOtp.equals(otp)) {
-            redisTemplate.delete(key);
-            return true;
+        if(storedOtp == null || !storedOtp.equals(otp)){
+            throw new InvalidOTPException("Invalid or expired OTP.");
         }
-        return false;
+
+        redisTemplate.delete(key);
     }
 }

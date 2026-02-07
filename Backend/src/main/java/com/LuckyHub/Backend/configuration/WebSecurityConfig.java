@@ -1,4 +1,4 @@
-package com.LuckyHub.Backend.Configuration;
+package com.LuckyHub.Backend.configuration;
 
 import com.LuckyHub.Backend.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;

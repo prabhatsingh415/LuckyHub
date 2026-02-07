@@ -1,211 +1,123 @@
 package com.LuckyHub.Backend.exception;
 
+import com.LuckyHub.Backend.model.ErrorResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UsernameNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleUserNotFound(UsernameNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of(
-                        "error", "Unauthorized",
-                        "message", ex.getMessage()
-                ));
+    private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String error, String message) {
+        ErrorResponse response = ErrorResponse.builder()
+                .status("error")
+                .error(error)
+                .message(message)
+                .timestamp(LocalDateTime.now())
+                .build();
+        return new ResponseEntity<>(response, status);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        return ResponseEntity.badRequest().body(errors);
+    }
+
+    @ExceptionHandler({
+            UserNotFoundException.class,
+            UserEmailNotFoundException.class,
+            PaymentNotFoundException.class,
+            VerificationTokenNotFoundException.class,
+            RefreshTokenNotFoundException.class
+    })
+    public ResponseEntity<ErrorResponse> handleNotFound(Exception ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
+    }
+
+    @ExceptionHandler({
+            UsernameNotFoundException.class,
+            JWTTokenNotFoundOrInvalidException.class,
+            InvalidTokenException.class,
+            GoogleAuthenticationFailedException.class,
+            UnauthorizedException.class
+    })
+    public ResponseEntity<ErrorResponse> handleUnauthorized(Exception ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", ex.getMessage());
+    }
+
+    @ExceptionHandler(UserNotVerifiedException.class)
+    public ResponseEntity<?> handleUserNotVerified(UserNotVerifiedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "status", "UNVERIFIED",
+                "message", ex.getMessage(),
+                "email", ex.getEmail(),
+                "token", ex.getToken()
+        ));
+    }
+
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(DataIntegrityViolationException ex) {
+        String message = (ex.getRootCause() != null) ? ex.getRootCause().getMessage() : "Duplicate entry detected";
+        return buildResponse(HttpStatus.CONFLICT, "Conflict", message);
+    }
+
+    @ExceptionHandler({MaximumLimitReachedException.class, RequestTooEarlyException.class})
+    public ResponseEntity<ErrorResponse> handleLimits(Exception ex) {
+        return buildResponse(HttpStatus.TOO_MANY_REQUESTS, "Limit Exceeded", ex.getMessage());
+    }
+
+
+    @ExceptionHandler({
+            VideosFromDifferentChannelsException.class, PlanLimitExceedException.class,
+            PlansGiveawayLimitExceedException.class, InvalidAmountForAnyPlanException.class,
+            PasswordMismatchException.class, UserAlreadyExistsException.class,
+            InvalidOTPException.class, SubscriptionDowngradeException.class,
+            PaymentGatewayException.class, ImageUploadFailedException.class,
+            InvalidCurrentPasswordException.class, UserIsAlreadyVerifiedException.class,
+            VerificationTokenExpiredException.class, PasswordTokenExpiredException.class,
+            PasswordSameAsOldException.class, InvalidPlanNameException.class
+    })
+    public ResponseEntity<ErrorResponse> handleBadRequest(Exception ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage());
     }
 
     @ExceptionHandler(org.springframework.web.client.RestClientException.class)
-    public ResponseEntity<Map<String, String>> handleRestClientException(Exception ex) {
-        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                .body(Map.of(
-                        "error", "Failed to communicate with Google OAuth servers",
-                        "message", ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleUserNotFoundException(UserNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of(
-                        "error", "User Not Found",
-                        "message", ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(UserEmailNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleUserEmailNotFoundException(UserEmailNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of(
-                        "error", "User Email Not Found",
-                        "message", ex.getMessage()
-                ));
+    public ResponseEntity<ErrorResponse> handleExternalApi(Exception ex) {
+        return buildResponse(HttpStatus.BAD_GATEWAY, "Gateway Error", "External API communication failed.");
     }
 
     @ExceptionHandler(EmailSendingFailedException.class)
-    public ResponseEntity<Map<String, String>> handleEmailSendingFailedException(EmailSendingFailedException ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of(
-                        "error", "Email Sending Failed",
-                        "message", ex.getMessage()
-                ));
+    public ResponseEntity<ErrorResponse> handleEmailError(Exception ex) {
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Mail Error", ex.getMessage());
     }
-
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<?> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
-        String message = "Duplicate entry detected. Please check your input.";
-        if (ex.getCause() != null) {
-            message = Objects.requireNonNull(ex.getRootCause()).getMessage();
-        }
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of(
-                        "status", "error",
-                        "message", message
-                ));
-    }
-
-    @ExceptionHandler(VideosFromDifferentChannelsException.class)
-    public ResponseEntity<?> handleVideosFromDifferentChannels(VideosFromDifferentChannelsException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                        "status", "error",
-                        "message", ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(PlanLimitExceedException.class)
-    public ResponseEntity<Map<String, String>> handlePlanLimitExceed(PlanLimitExceedException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                        "error", "Plan Limit Exceeded",
-                        "message", ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(PlansGiveawayLimitExceedException.class)
-    public ResponseEntity<Map<String, String>> handlePlansGiveawayLimitExceed(PlansGiveawayLimitExceedException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                        "error", "Giveaway Limit Exceeded",
-                        "message", ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(JWTTokenNotFoundOrInvalidException.class)
-    public ResponseEntity<Map<String, String>> handleJWTTokenException(JWTTokenNotFoundOrInvalidException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of(
-                        "error", "Invalid or Missing JWT Token",
-                        "message", ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(InvalidAmountForAnyPlanException.class)
-    public ResponseEntity<Map<String, String>> handleInvalidAmountException(InvalidAmountForAnyPlanException ex){
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                        "error", "Invalid Plan Amount !",
-                        "message", ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(PaymentNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleInvalidAmountException(PaymentNotFoundException ex){
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of(
-                        "error", "Payment Data Not Found !",
-                        "message", ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(MaximumLimitReachedException.class)
-    public ResponseEntity<Map<String, String>> handleMaximumLimitReachedException(MaximumLimitReachedException ex){
-        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                .body(Map.of(
-                        "error", "Maximum Limit Reached!",
-                        "message", ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(InvalidTokenException.class)
-    public ResponseEntity<Map<String, String>> handleInvalidTokenException(InvalidTokenException ex){
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                        "error", "Invalid Verification token!",
-                        "message", ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(ImageUploadFailedException.class)
-    public ResponseEntity<Map<String, String>> handlesImageUploadExceptionFailed(ImageUploadFailedException ex){
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                        "error", "Internal error !",
-                        "message", ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(PasswordMismatchException.class)
-    public ResponseEntity<Map<String, String>> handlePasswordMismatchException(PasswordMismatchException ex){
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                        "error", "Internal error !",
-                        "message", ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(InvalidCurrentPasswordException.class)
-    public ResponseEntity<Map<String, String>> handleInvalidCurrentPasswordException(InvalidCurrentPasswordException ex){
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                        "error", "Internal error !",
-                        "message", ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(SubscriptionDowngradeException.class)
-    public ResponseEntity<Map<String, String>> handleSubscriptionDowngradeException(Exception ex){
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                        "error", "Something went wrong",
-                        "message", ex.getMessage()
-                ));
-    }
-
 
     @ExceptionHandler(IncorrectResultSizeDataAccessException.class)
-    public ResponseEntity<?> handleNonUniqueResult(IncorrectResultSizeDataAccessException ex) {
-        System.err.println("Multiple Records Error: " + ex.getMessage());
-
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                "status", "Error",
-                "message", "System found multiple records where only one was expected. Please contact support to fix your account data."
-        ));
-    }
-    @ExceptionHandler(PaymentGatewayException.class)
-    public ResponseEntity<Map<String, String>> handlePaymentGatewayException(Exception ex){
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                        "error", "Something went wrong",
-                        "message", ex.getMessage()
-                ));
+    public ResponseEntity<ErrorResponse> handleDataError(Exception ex) {
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Data Integrity Error", "Multiple records found where one was expected.");
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of(
-                        "error", "Something went wrong",
-                        "message", ex.getMessage()
-                ));
+    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        log.error("CRITICAL ERROR: ", ex);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Server Error", "An unexpected error occurred.");
     }
-
 }

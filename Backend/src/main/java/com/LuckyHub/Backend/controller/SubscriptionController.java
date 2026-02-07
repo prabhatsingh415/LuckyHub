@@ -3,13 +3,14 @@ package com.LuckyHub.Backend.controller;
 
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
-import com.LuckyHub.Backend.service.JWTService;
+import com.LuckyHub.Backend.model.OrderRequest;
+import com.LuckyHub.Backend.model.PaymentVerificationRequest;
+import com.LuckyHub.Backend.model.RazorpayOrderResponse;
 import com.LuckyHub.Backend.service.PaymentService;
 import com.LuckyHub.Backend.service.SubscriptionService;
 import com.LuckyHub.Backend.service.UserService;
-import com.razorpay.*;
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,44 +20,41 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/subscription")
+@Slf4j
 public class SubscriptionController {
     private final SubscriptionService subscriptionService;
-    private final UserService userService;
     private final PaymentService paymentService;
-    private final JWTService jwtService;
+    private final UserService userService;
 
-    public SubscriptionController(SubscriptionService subscriptionService, UserService userService, PaymentService paymentService, JWTService jwtService, RazorpayClient razorpayClient) {
+    public SubscriptionController(SubscriptionService subscriptionService, PaymentService paymentService, UserService userService) {
         this.subscriptionService = subscriptionService;
-        this.userService = userService;
         this.paymentService = paymentService;
-        this.jwtService = jwtService;
+        this.userService = userService;
     }
 
     @PostMapping("/createOrder")
-    public ResponseEntity<?> proceedPayment(@AuthenticationPrincipal UserDetails userDetails, @RequestBody Map<String, String> data) throws RazorpayException {
+    public ResponseEntity<?> proceedPayment(@AuthenticationPrincipal UserDetails userDetails, @Valid @RequestBody OrderRequest request) {
+        String planName = request.getPlanName().toUpperCase();
         String email = userDetails.getUsername();
-        Long userId = userService.findUserIdByEmail(email);
-        String planName = data.get("planName").toUpperCase();
+        User user = userService.findUserByEmail(email)
+                .orElseThrow(()-> new UserNotFoundException("User not found !"));
 
-        Map<String, Object> response = paymentService.initializePayment(userId, planName);
-
+        RazorpayOrderResponse response = paymentService.initializePayment(user, planName);
         return ResponseEntity.ok(response);
     }
 
 
     @PostMapping("/verifyPayment")
-    public ResponseEntity<?> verifyPayment(@AuthenticationPrincipal UserDetails userDetails, @RequestBody Map<String, Object> data) {
+    public ResponseEntity<?> verifyPayment(@AuthenticationPrincipal UserDetails userDetails, @Valid @RequestBody PaymentVerificationRequest request) {
+        log.info("Verifying payment for order: {}", request.getRazorpay_order_id());
 
-        String orderId = data.get("razorpay_order_id").toString();
         String email = userDetails.getUsername();
-        Long userId = userService.findUserIdByEmail(email);
+        User user = userService.findUserByEmail(email)
+                .orElseThrow(()-> new UserNotFoundException("User not found !"));
 
-        User user = userService.getUserById(userId).orElseThrow(() -> new UserNotFoundException("User Not Found!"));
+        boolean isVerified = paymentService.processAndVerify(user, request);
 
-        boolean verifiedNow = paymentService.processPaymentForCompletion(data, user);
-        boolean isAlreadySucceed = paymentService.checkIsPaymentSuccess(orderId);
-
-        if (verifiedNow || isAlreadySucceed) {
+        if (isVerified) {
             return ResponseEntity.ok(Map.of(
                     "status", "success",
                     "message", "Payment successful and subscription activated."
@@ -72,12 +70,18 @@ public class SubscriptionController {
     @GetMapping("/lastPayment")
     public ResponseEntity<?> getLastPayment(@AuthenticationPrincipal UserDetails userDetails){
         String email = userDetails.getUsername();
-        return ResponseEntity.ok(paymentService.getLastPayment(email));
+        User user = userService.findUserByEmail(email)
+                               .orElseThrow(()-> new UserNotFoundException("User not found !"));
+
+        return ResponseEntity.ok(paymentService.getLastPayment(user));
     }
 
     @GetMapping("/getSubscription")
     public ResponseEntity<?> getSubscription(@AuthenticationPrincipal UserDetails userDetails){
         String email = userDetails.getUsername();
-        return ResponseEntity.ok(subscriptionService.getUserSubscription(email));
+        User user = userService.findUserByEmail(email)
+                .orElseThrow(()-> new UserNotFoundException("User not found !"));
+
+        return ResponseEntity.ok(subscriptionService.getUserSubscription(user));
     }
 }

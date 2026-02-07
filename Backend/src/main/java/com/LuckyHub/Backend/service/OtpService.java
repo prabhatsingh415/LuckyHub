@@ -6,5 +6,5 @@ import org.springframework.stereotype.Service;
 public interface OtpService {
     void sendDeleteAccountOTP(String email);
 
-    boolean verifyDeleteOTP(String email, String otp);
+    void verifyDeleteOTP(String email, String otp);
 }

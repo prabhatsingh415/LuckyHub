@@ -3,42 +3,42 @@ package com.LuckyHub.Backend.service;
 import com.LuckyHub.Backend.entity.GiveawayHistory;
 import com.LuckyHub.Backend.entity.Subscription;
 import com.LuckyHub.Backend.entity.User;
+import com.LuckyHub.Backend.entity.VideoDetail;
 import com.LuckyHub.Backend.exception.PlanLimitExceedException;
 import com.LuckyHub.Backend.exception.PlansGiveawayLimitExceedException;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
 import com.LuckyHub.Backend.exception.VideosFromDifferentChannelsException;
-import com.LuckyHub.Backend.model.Comment;
-import com.LuckyHub.Backend.model.SubscriptionTypes;
-import com.LuckyHub.Backend.model.WinnerRequest;
-import com.LuckyHub.Backend.model.WinnerResponse;
+import com.LuckyHub.Backend.model.*;
 import com.LuckyHub.Backend.repository.GiveawayHistoryRepository;
-import com.LuckyHub.Backend.repository.SubscriptonRepository;
+import com.LuckyHub.Backend.repository.SubscriptionRepository;
 import com.LuckyHub.Backend.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.stream.IntStream;
 
+@Slf4j
 @Service
 public class WinnerServiceImpl implements WinnerService {
 
     private final VideoService videoService;
     private final UserService userService;
-    private final SubscriptonRepository subscriptionRepository;
+    private final SubscriptionRepository subscriptionRepository;
     private final GiveawayHistoryService giveawayHistoryService;
     private final CacheManager cacheManager;
     private final UserRepository userRepository;
 
-    public WinnerServiceImpl(VideoService videoService, UserService userService, SubscriptonRepository subscriptonRepository, GiveawayHistoryRepository giveawayHistoryRepository, GiveawayHistoryService giveawayHistoryService, CacheManager cacheManager, UserRepository userRepository) {
+    public WinnerServiceImpl(VideoService videoService, UserService userService, SubscriptionRepository subscriptionRepository, GiveawayHistoryRepository giveawayHistoryRepository, GiveawayHistoryService giveawayHistoryService, CacheManager cacheManager, UserRepository userRepository) {
         this.videoService = videoService;
         this.userService = userService;
-        this.subscriptionRepository = subscriptonRepository;
+        this.subscriptionRepository = subscriptionRepository;
         this.giveawayHistoryService = giveawayHistoryService;
         this.cacheManager = cacheManager;
         this.userRepository = userRepository;
@@ -46,10 +46,16 @@ public class WinnerServiceImpl implements WinnerService {
 
     @Transactional
     @Override
+    @CacheEvict(value = "dashboardCache", key = "#email")
     public WinnerResponse findWinner(WinnerRequest request, String email) {
+        log.info("find a winner request reached !");
+        List<String> videoIds = request.getVideoLinks().stream()
+                .map(videoService::extractVideoId).toList();
 
-        if (!videoService.verifySameUser(request.getVideoLinks())) {
-            throw new VideosFromDifferentChannelsException("All provided videos must be from the same channel.");
+        VideoMetadata metadata = videoService.getVideoMetadata(videoIds);
+
+        if (metadata.getChannelIds().size() > 1) {
+            throw new VideosFromDifferentChannelsException("All videos must be from the same channel.");
         }
 
         User user = userService.findUserByEmail(email)
@@ -67,10 +73,19 @@ public class WinnerServiceImpl implements WinnerService {
             throw new PlanLimitExceedException("Winners exceed your plan limit.");
         }
 
-        List<Comment> fetchedComments = videoService.fetchComments(request.getVideoLinks(), request.getKeyword(), subscription.getSubscriptionType());
+        List<Comment> fetchedComments = videoService.fetchComments(videoIds, request.getKeyword(), subscription.getSubscriptionType());
         List<Comment> winners = videoService.selectWinner(fetchedComments, request.getNumberOfWinners());
+        List<VideoDetail> videoDetails = IntStream.range(0, metadata.getVideoIds().size())
+                .mapToObj(i -> new VideoDetail(
+                        metadata.getVideoIds().get(i),
+                        metadata.getThumbnailUrls().get(i),
+                        metadata.getTitles().get(i)
+                ))
+                .toList();
 
         if (winners.isEmpty()) {
+            log.info("fetched Comments {}", fetchedComments.size());
+            log.info("No winners found !");
             return new WinnerResponse(winners);
         }
 
@@ -82,21 +97,19 @@ public class WinnerServiceImpl implements WinnerService {
         user.setWinnersSelectedThisMonth(user.getWinnersSelectedThisMonth() + 1);
         userRepository.save(user);
 
-        List<String> winnerNames = winners.stream().map(Comment::getAuthorName).toList();
-
-        GiveawayHistory giveawayHistory = GiveawayHistory.builder()
+        GiveawayHistory history = GiveawayHistory.builder()
                 .userId(user.getId())
                 .commentCount(fetchedComments.size())
                 .winnersCount(winners.size())
-                .winners(winnerNames)
+                .winners(winners.stream().map(Comment::getAuthorName).toList())
+                .videoDetails(videoDetails)
+                .keywordUsed(request.getKeyword())
+                .loyaltyFilterApplied(videoIds.size() > 1)
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        giveawayHistoryService.saveHistory(giveawayHistory);
+        giveawayHistoryService.saveHistory(history);
 
-        if (cacheManager.getCache("dashboardCache") != null) {
-            Objects.requireNonNull(cacheManager.getCache("dashboardCache")).evict(email);
-        }
         return new WinnerResponse(winners);
     }
 }

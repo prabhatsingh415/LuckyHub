@@ -11,7 +11,7 @@ import com.LuckyHub.Backend.utils.RefreshTokenUtil;
 import com.LuckyHub.Backend.utils.URLUtil;
 import com.LuckyHub.Backend.utils.VerificationTokenUtil;
 import jakarta.transaction.Transactional;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -29,14 +29,14 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.*;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
 public class UserServiceImpl implements UserService{
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final AuthenticationManager authenticationManager;
-    private final JWTService jwtService;
+    private final JWTServiceImpl jwtService;
     private final ApplicationEventPublisher publisher;
     private final RefreshTokenService refreshTokenService;
     private final ImageService imageService;
@@ -66,7 +66,7 @@ public class UserServiceImpl implements UserService{
             throw new MaximumLimitReachedException("You have reached the maximum limit for Sign up. Please try again after 24 hours.");
         }
 
-        User user = this.save(userModel);
+        User user = this.save(userModel, false);
 
         String token = UUID.randomUUID().toString(); // generating token;
 
@@ -88,7 +88,7 @@ public class UserServiceImpl implements UserService{
         userRepository.save(user);
 
         String accessToken = jwtService.generateToken(user);
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
         ResponseCookie refreshCookie = RefreshTokenUtil.buildRefreshCookie(refreshToken.getToken());
 
         return AuthVerificationResponse.builder()
@@ -122,8 +122,8 @@ public class UserServiceImpl implements UserService{
         );
         // Generate JWT using the User entity
         String accessToken = jwtService.generateToken(user);
-        refreshTokenService.deleteByUserId(user.getId());
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
+        refreshTokenService.deleteByUser(user);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
         user.setUpdatedAt(new Date());
 
         ResponseCookie refreshCookie = RefreshTokenUtil.buildRefreshCookie(refreshToken.getToken());
@@ -145,8 +145,8 @@ public class UserServiceImpl implements UserService{
         User user = token.getUser();
         String newAccessToken = jwtService.generateToken(user);
 
-        refreshTokenService.deleteByUserId(user.getId());
-        RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getEmail());
+        refreshTokenService.deleteByUser(user);
+        RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user);
 
         ResponseCookie refreshCookie = RefreshTokenUtil.buildRefreshCookie(newRefreshToken.getToken());
         log.info("Refresh token renewed successfully for user: {}", user.getEmail());
@@ -268,9 +268,27 @@ public class UserServiceImpl implements UserService{
         return this.logoutUser(email);
     }
 
+
+    @Override
+    public void saveUser(User user) {
+       userRepository.save(user);
+    }
+
+    @Override
+    public Long findUserIdByEmail(String email) {
+        return userRepository.findIdByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+    }
+
+    @Override
+    public void resetAllWinnersCount() {
+        log.info("[UserService] Triggering bulk reset for winners count...");
+        userRepository.bulkResetWinnersCount();
+    }
+
     @Transactional
     @Override
-    public User save(UserModel userModel){
+    public User save(UserModel userModel, boolean isVerified){
         Subscription subscription = Subscription.builder()
                                     .subscriptionType(SubscriptionTypes.FREE)
                                     .status(SubscriptionStatus.NONE)
@@ -287,7 +305,7 @@ public class UserServiceImpl implements UserService{
         user.setLastName(userModel.getLastName());
         user.setEmail(userModel.getEmail());
         user.setPassword(bCryptPasswordEncoder.encode(userModel.getPassword()));
-        user.setVerified(false);
+        user.setVerified(isVerified);
         user.setCreatedAt(new Date());
         user.setUpdatedAt(new Date());
         user.setSubscription(subscription);
@@ -371,11 +389,6 @@ public class UserServiceImpl implements UserService{
                 .subscriptionExpiryDate(sub.getExpiringDate() != null ? sub.getExpiringDate().getTime() : null)
                 .isSubscriptionExpired(sub.getExpiringDate() != null && sub.getExpiringDate().before(now))
                 .build();
-    }
-
-    @Override
-    public Long findUserIdByEmail(String email) {
-        return userRepository.findIdByEmail(email);
     }
 
     @Override

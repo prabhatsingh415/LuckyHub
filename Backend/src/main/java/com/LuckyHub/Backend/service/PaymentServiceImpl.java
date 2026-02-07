@@ -4,13 +4,8 @@ import com.LuckyHub.Backend.entity.Payment;
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.event.PaymentRefundEvent;
 import com.LuckyHub.Backend.event.PaymentSuccessfulEvent;
-import com.LuckyHub.Backend.exception.PaymentGatewayException;
-import com.LuckyHub.Backend.exception.PaymentNotFoundException;
-import com.LuckyHub.Backend.exception.SubscriptionDowngradeException;
-import com.LuckyHub.Backend.exception.UserNotFoundException;
-import com.LuckyHub.Backend.model.LastPaymentModel;
-import com.LuckyHub.Backend.model.PaymentStatus;
-import com.LuckyHub.Backend.model.SubscriptionTypes;
+import com.LuckyHub.Backend.exception.*;
+import com.LuckyHub.Backend.model.*;
 import com.LuckyHub.Backend.repository.PaymentRepository;
 import com.razorpay.*;
 import jakarta.transaction.Transactional;
@@ -23,19 +18,14 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 
 @Slf4j
 @Service
 public class PaymentServiceImpl implements PaymentService {
-
-    @Value("${Razorpay_key_Id}")
-    private String key;
 
     @Value("${Razorpay_key_secret}")
     private String secret;
@@ -73,7 +63,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public void completePayment(String orderId, String paymentId, boolean signatureVerified, LocalDateTime paymentDate, User user, String planByAmount, int amount, String paymentMethod) {
+    public void completePayment(String orderId, String paymentId, boolean signatureVerified, LocalDateTime paymentDate, User user, String planByAmount, BigDecimal amount, String paymentMethod) {
         Payment payment = paymentRepo.findByOrderId(orderId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment record not found " + orderId));
 
@@ -88,7 +78,7 @@ public class PaymentServiceImpl implements PaymentService {
                 PaymentStatus.SUCCESS,
                 payment.getId()
         );
-        subscriptionService.upgradeSubscription(payment);
+        subscriptionService.upgradeSubscription(user, payment);
         log.info("Trying to send the email........");
         // Sending payment successful mail
         publisher.publishEvent(new PaymentSuccessfulEvent(
@@ -100,22 +90,9 @@ public class PaymentServiceImpl implements PaymentService {
         ));
     }
 
-    @Override
-    public Payment getPaymentByOrderId(String orderId) {
-        return paymentRepo.findByOrderId(orderId)
-                .orElseThrow(() -> new PaymentNotFoundException("Payment not found"));
-    }
 
 @Override
-public Payment getPaymentDataToUpgradeService(String paymentId) {
-    return paymentRepo.findByPaymentId(paymentId);
-}
-
-@Override
-public LastPaymentModel getLastPayment(String email) {
-
-    User user = userService.findUserByEmail(email)
-            .orElseThrow(() -> new UserNotFoundException("User not found !"));
+public LastPaymentModel getLastPayment(User user) {
 
     Payment payment = paymentRepo.findFirstByUserIdAndStatusOrderByCreatedAtDesc(user.getId(), PaymentStatus.SUCCESS)
             .orElseThrow(() -> new PaymentNotFoundException("No payment found for this user!"));
@@ -127,10 +104,10 @@ public LastPaymentModel getLastPayment(String email) {
 
     LocalDate startDate = payment.getPaymentDate().toLocalDate();
     LocalDate endDate = startDate.plusMonths(1);
-
+    BigDecimal amountInRupees = payment.getAmount();
     return LastPaymentModel.builder()
             .paymentId(payment.getPaymentId())
-            .amount(payment.getAmount())
+            .amount(amountInRupees)
             .currency(payment.getCurrency())
             .subscriptionType(payment.getPlanType())
             .periodStart(startDate)
@@ -150,17 +127,17 @@ public void markPaymentFailed(String orderId) {
 }
 
 @Override
-public boolean processPaymentForCompletion(Map<String, Object> data, User user) {
+public boolean processPaymentForCompletion(PaymentVerificationRequest request, User user) {
 
     try {
-        String orderId  = data.get("razorpay_order_id").toString();
-        String paymentId = data.get("razorpay_payment_id").toString();
-        String signature = data.get("razorpay_signature").toString();
+        String orderId  = request.getRazorpay_order_id();
+        String paymentId = request.getRazorpay_payment_id();
+        String signature = request.getRazorpay_signature();
 
         Payment payment = paymentRepo.findByOrderId(orderId)
                           .orElseThrow(() -> new PaymentNotFoundException("Payment not found !"));
 
-        int amountInPaise = payment.getAmount().multiply(new BigDecimal(100)).intValue();
+        long amountInPaise = payment.getAmount().multiply(new BigDecimal(100)).longValue();
 
         JSONObject attributes = new JSONObject();
         attributes.put("razorpay_order_id", orderId);
@@ -177,7 +154,7 @@ public boolean processPaymentForCompletion(Map<String, Object> data, User user) 
             com.razorpay.Payment capturedPayment = razorpayClient.payments.capture(paymentId, captureRequest);//capture the payment
             String paymentMethod = capturedPayment.get("method");
 
-            this.completePayment(orderId, paymentId, true, LocalDateTime.now(), user, payment.getPlanType().toString(), amountInPaise/100, paymentMethod); // complete the payment
+            this.completePayment(orderId, paymentId, true, LocalDateTime.now(), user, payment.getPlanType().toString(), payment.getAmount(), paymentMethod); // complete the payment
         } else {
             return false;
         }
@@ -190,10 +167,7 @@ public boolean processPaymentForCompletion(Map<String, Object> data, User user) 
 }
 
 @Override
-public Map<String, Object> initializePayment(Long userId, String planName) {
-    User user = userService.getUserById(userId)
-            .orElseThrow(() -> new UserNotFoundException("User not found!"));
-
+public RazorpayOrderResponse initializePayment(User user, String planName) {
     SubscriptionTypes currPlan = (user.getSubscription() != null)
             ? user.getSubscription().getSubscriptionType()
             : SubscriptionTypes.FREE;
@@ -202,7 +176,7 @@ public Map<String, Object> initializePayment(Long userId, String planName) {
     try {
         requestedPlan = SubscriptionTypes.valueOf(planName);
     } catch (IllegalArgumentException e) {
-        return Map.of("message", "Invalid Plan Name!");
+        throw new InvalidPlanNameException("Invalid Plan Name!");
     }
 
     if (requestedPlan.getPrice() <= currPlan.getPrice()) {
@@ -212,31 +186,40 @@ public Map<String, Object> initializePayment(Long userId, String planName) {
         throw new SubscriptionDowngradeException("Downgrade or re-purchase of " + currPlan + " is not allowed!");
     }
 
-    int subAmount = requestedPlan.getPrice();
+    BigDecimal subAmount = BigDecimal.valueOf(requestedPlan.getPrice());
+    BigDecimal amountInPaiseBD = subAmount.multiply(new BigDecimal("100"));
+    long finalAmountInPaise = amountInPaiseBD.longValue();
 
-    String receiptId = "LHN_" + userId + "_" + System.currentTimeMillis();
+    String receiptId = "LHN_" + user.getId() + "_" + System.currentTimeMillis();
     JSONObject obj = new JSONObject();
-    obj.put("amount", subAmount * 100);
+    obj.put("amount", finalAmountInPaise);
     obj.put("currency", "INR");
     obj.put("receipt", receiptId);
     obj.put("payment_capture", 0);
-    Order order = null;
+    Order order;
     try {
         order = razorpayClient.orders.create(obj);
-        log.info("Order created for {}",userId);
+        log.info("Order created for {}",user.getId());
     } catch (RazorpayException e) {
-        log.info("Order creation failed for {}", userId);
+        log.info("Order creation failed for {}", user.getId());
         throw new PaymentGatewayException("Razorpay order creation failed!");
     }
 
+    createPartialPayment(user.getId(), requestedPlan, subAmount, "INR", order.get("id"), receiptId);
 
-    createPartialPayment(userId, requestedPlan, BigDecimal.valueOf(subAmount), "INR", order.get("id"), receiptId);
+    return RazorpayOrderResponse.builder()
+                                .orderId(order.get("id"))
+                                .amount(subAmount)
+                                .currency("INR").build();
+}
 
-  return Map.of(
-            "orderId", order.get("id"),
-            "amount", subAmount,
-            "currency", "INR"
-    );
+@Override
+@Transactional
+public boolean processAndVerify(User user, PaymentVerificationRequest request) {
+    boolean verifiedNow = this.processPaymentForCompletion(request, user);
+    boolean isAlreadySucceed = this.checkIsPaymentSuccess(request.getRazorpay_order_id());
+
+    return verifiedNow || isAlreadySucceed;
 }
 
 @Override
@@ -260,7 +243,10 @@ public void processRazorpayWebhook(String payload, String signature) {
 
             String paymentId = paymentEntity.getString("id");
             orderId = paymentEntity.getString("order_id");
-            int amount = paymentEntity.getInt("amount");
+            long amountInPaise = paymentEntity.getLong("amount");
+
+            BigDecimal amountInRupees = BigDecimal.valueOf(amountInPaise)
+                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
 
             Payment payment = paymentRepo.findByOrderId(orderId).orElseThrow(() -> new PaymentNotFoundException("Payment not found !"));
 
@@ -270,18 +256,16 @@ public void processRazorpayWebhook(String payload, String signature) {
             }
 
             User user = userService.findUserByUserId(payment.getUserId());
-            SubscriptionTypes planByAmount = subscriptionService.getPlanByAmount(amount/100);
+            SubscriptionTypes planByAmount = subscriptionService.getPlanByAmount(amountInRupees);
 
             try {
                 JSONObject captureRequest = new JSONObject();
-                captureRequest.put("amount", amount);
+                captureRequest.put("amount", amountInPaise);
                 captureRequest.put("currency", "INR");
-                throw new PaymentGatewayException("no no no !");
-//                    com.razorpay.Payment capturedPayment = razorpayClient.payments.capture(paymentId, captureRequest);
-//                    String paymentMethod = capturedPayment.get("method");
-
-//                    this.completePayment(orderId, paymentId, true, LocalDateTime.now(), user, planByAmount.toString(), amount/100, paymentMethod);
-          //  log.info("Webhook Success: Payment captured for order {}", orderId);
+                com.razorpay.Payment capturedPayment = razorpayClient.payments.capture(paymentId, captureRequest);
+                String paymentMethod = capturedPayment.get("method");
+                this.completePayment(orderId, paymentId, true, LocalDateTime.now(), user, planByAmount.toString(), BigDecimal.valueOf(amountInPaise), paymentMethod);
+            log.info("Webhook Success: Payment captured for order {}", orderId);
             }catch (Exception e){
                 log.error("Webhook Error: Capture failed for {}. Reason: {}", orderId, e.getMessage());
                 this.markPaymentFailed(orderId);
@@ -289,7 +273,7 @@ public void processRazorpayWebhook(String payload, String signature) {
                       user,
                       planByAmount.toString(),
                       orderId,
-                      amount/100
+                      amountInRupees
                 ));
                 log.info("Webhook Error: Payment Refund mail send for user {}", user);
             }
@@ -320,17 +304,21 @@ public void deletePayment(long userId) {
     paymentRepo.deleteByUserId(userId);
 }
 
+@Transactional
 @Scheduled(cron = "0 0 0 * * *")  // cron job for DB cleanup
 public void cleanJunk() {
+    log.info("[Payment-CRON] Starting junk payment cleanup...");
     LocalDateTime threshold = LocalDateTime.now().minusHours(24);
 
     paymentRepo.deleteByStatusAndCreatedAtBefore(PaymentStatus.PENDING, threshold);
     paymentRepo.deleteByStatusAndCreatedAtBefore(PaymentStatus.FAILED, threshold);
+
+    log.info("[Payment-CRON] Cleanup finished.");
 }
 
 
 @Scheduled(cron = "0 0/15 * * * *")
-public void reconcileStuckPayments() {
+public void reconcileStuckPayments() { // cron job for payment reconciliation
     log.info("[Payment-CRON] Starting payment reconciliation job...");
 
     LocalDateTime threshold = LocalDateTime.now().minusMinutes(15);
@@ -339,8 +327,7 @@ public void reconcileStuckPayments() {
     for (Payment payment : stuckPayments) {
         String orderId = payment.getOrderId();
         String planName = payment.getPlanType().toString();
-        int amountInPaise = payment.getAmount().multiply(new BigDecimal(100)).intValue();
-        int amountInRupees = amountInPaise / 100;
+        BigDecimal amountInRupee = payment.getAmount();
         User user = null;
 
         try {
@@ -357,20 +344,22 @@ public void reconcileStuckPayments() {
 
                 if ("captured".equals(rzpStatus)) {
                     log.info("[Payment-CRON] Syncing already captured payment for Order: {}", orderId);
-                    this.completePayment(orderId, rzpPaymentId, true, LocalDateTime.now(), user, planName, amountInRupees, rzpMethod);
+                    this.completePayment(orderId, rzpPaymentId, true, LocalDateTime.now(), user, planName, amountInRupee, rzpMethod);
                     isResolved = true;
                     break;
                 }
                 else if ("authorized".equals(rzpStatus)) {
                     log.info("[Payment-CRON] Capturing authorized payment for Order: {}", orderId);
+                    long rzpAmountInPaise = amountInRupee.multiply(new BigDecimal("100")).longValue();
+
                     JSONObject captureRequest = new JSONObject();
-                    captureRequest.put("amount", amountInPaise);
+                    captureRequest.put("amount", rzpAmountInPaise);
                     captureRequest.put("currency", "INR");
 
                     com.razorpay.Payment captured = razorpayClient.payments.capture(rzpPaymentId, captureRequest);
                     String capturedMethod = captured.get("method");
 
-                    this.completePayment(orderId, rzpPaymentId, true, LocalDateTime.now(), user, planName, amountInRupees, capturedMethod);
+                    this.completePayment(orderId, rzpPaymentId, true, LocalDateTime.now(), user, planName, amountInRupee, capturedMethod);
                     isResolved = true;
                     break;
                 }
@@ -385,7 +374,7 @@ public void reconcileStuckPayments() {
             this.markPaymentFailed(orderId);
 
             if (user != null) {
-                publisher.publishEvent(new PaymentRefundEvent(user, planName, orderId, amountInRupees));
+                publisher.publishEvent(new PaymentRefundEvent(user, planName, orderId, amountInRupee));
                 log.info("[Payment-CRON] Refund/Failure mail sent for order {}", orderId);
             }
         }

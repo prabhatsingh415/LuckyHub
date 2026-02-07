@@ -1,7 +1,6 @@
-package com.LuckyHub.Backend.Configuration;
+package com.LuckyHub.Backend.configuration;
 
 import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

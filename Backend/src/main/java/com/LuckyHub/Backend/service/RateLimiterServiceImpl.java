@@ -20,11 +20,11 @@ public class RateLimiterServiceImpl implements RateLimiterService {
     private final ProxyManager<String> proxyManager;
     private final StringRedisTemplate redisTemplate;
 
-    public boolean tryConsume(String endpoint, Long userId, int maxAttemptsPerDay) {
+    public boolean tryConsume(String endpoint, String email, int maxAttemptsPerDay) {
 
         // Unique daily key → resets every day automatically
         String date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
-        String key = "rate:" + endpoint + ":" + userId + ":" + date;
+        String key = "rate:" + endpoint + ":" + email + ":" + date;
 
         // Bucket config
         Supplier<BucketConfiguration> configSupplier = () -> {

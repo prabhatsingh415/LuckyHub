@@ -1,4 +1,4 @@
-package com.LuckyHub.Backend.Configuration;
+package com.LuckyHub.Backend.configuration;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;

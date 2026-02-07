@@ -3,9 +3,9 @@ package com.LuckyHub.Backend.utils;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-public class UrlUtil {
+public class URLUtil {
 
-    private UrlUtil() {
+    private URLUtil() {
         // Prevent instantiation
     }
 
@@ -29,5 +29,11 @@ public class UrlUtil {
         }
 
         return baseUrl.toString();
+    }
+
+    public static String generatePasswordResetURL(String url, String token) {
+        return url
+                + "/reset-password?token="
+                + token;
     }
 }

@@ -1,28 +1,33 @@
 package com.LuckyHub.Backend.service;
 
 import com.LuckyHub.Backend.entity.RefreshToken;
-import com.LuckyHub.Backend.entity.Subscription;
 import com.LuckyHub.Backend.entity.User;
+import com.LuckyHub.Backend.exception.GoogleAuthenticationFailedException;
 import com.LuckyHub.Backend.exception.UnauthorizedException;
-import com.LuckyHub.Backend.model.SubscriptionStatus;
-import com.LuckyHub.Backend.model.SubscriptionTypes;
-import com.LuckyHub.Backend.repository.UserRepository;
+import com.LuckyHub.Backend.model.UserModel;
+import com.LuckyHub.Backend.utils.RefreshTokenUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class GoogleAuthServiceImpl implements GoogleAuthService {
+
+    private final RefreshTokenService refreshTokenService;
+    private final RestTemplate restTemplate;
+    private final UserService userService;
 
     @Value("${GOOGLE_CLIENT_ID}")
     private String clientId;
@@ -33,20 +38,16 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
     @Value("${GOOGLE_REDIRECT_URI}")
     private String redirectURL;
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final RefreshTokenService refreshTokenService;
-    private final RestTemplate restTemplate;
-
-
-    public GoogleAuthServiceImpl(UserRepository userRepository,
-                                 PasswordEncoder passwordEncoder, RefreshTokenService refreshTokenService, RestTemplate restTemplate) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.refreshTokenService = refreshTokenService;
-        this.restTemplate = restTemplate;
+    @Override
+    public ResponseCookie authenticateGoogleUser(String code) {
+        try{
+            RefreshToken refreshToken = this.processUser(code); // Token
+            return RefreshTokenUtil.buildRefreshCookie(refreshToken.getToken());
+        }catch (Exception e){
+            log.error("Authentication error: {}", e.getMessage());
+            throw new GoogleAuthenticationFailedException("OAuth request failed!");
+        }
     }
-
 
     // Process Google user info map and return refresh token
     @Transactional
@@ -79,50 +80,28 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
 
 
         if (userInfoResponse.getStatusCode() != HttpStatus.OK) {
-            throw new UnauthorizedException("Google Auth Failed"); // Null mat bhej
+            throw new UnauthorizedException("Google Auth Failed");
         }
             Map userInfo = userInfoResponse.getBody();
 
             String email = userInfo.get("email").toString();
             String firstName = userInfo.getOrDefault("given_name", "").toString();
             String lastName = userInfo.getOrDefault("family_name", "").toString();
-            String avatarURL = userInfo.getOrDefault(
-                    "picture",
-                    "https://cdn-icons-png.flaticon.com/512/4712/4712109.png" // default avatar
-            ).toString();
 
-
-            User user = userRepository.findByEmail(email)
+            User user =
+                     userService.findUserByEmail(email)
                     .orElseGet(() -> {
                         //Adding Subscription
-                        Subscription subscription = Subscription.builder()
-                                .subscriptionType(SubscriptionTypes.FREE)
-                                .status(SubscriptionStatus.NONE)
-                                .maxComments(SubscriptionTypes.FREE.getMaxComments())
-                                .maxWinners(SubscriptionTypes.FREE.getMaxWinners())
-                                .remainingGiveaways(SubscriptionTypes.FREE.getMaxGiveaways())
-                                .startDate(new Date())
-                                .expiringDate(null)
-                                .paymentId(null)
-                                .build();
+                        UserModel model = new UserModel();
+                        model.setEmail(email);
+                        model.setFirstName(firstName);
+                        model.setLastName(lastName);
+                        model.setPassword(UUID.randomUUID().toString());
 
-
-                        User newUser = new User();
-                        newUser.setEmail(email);
-                        newUser.setFirstName(firstName);
-                        newUser.setLastName(lastName);
-                        newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
-                        newUser.setVerified(true);
-                        newUser.setCreatedAt(new Date());
-                        newUser.setUpdatedAt(new Date());
-                        newUser.setSubscription(subscription);
-                        newUser.setAvatarUrl(avatarURL);
-                        newUser.setWinnersSelectedThisMonth(0);
-
-                        subscription.setUser(newUser);
-                        return userRepository.save(newUser);
+                        return userService.save(model, true);
                     });
 
-            return refreshTokenService.createRefreshToken(user.getEmail());
+            return refreshTokenService.createRefreshToken(user);
     }
+
 }

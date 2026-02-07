@@ -1,4 +1,4 @@
-package com.LuckyHub.Backend.Configuration;
+package com.LuckyHub.Backend.configuration;
 
 import com.LuckyHub.Backend.service.JWTService;
 import jakarta.servlet.FilterChain;

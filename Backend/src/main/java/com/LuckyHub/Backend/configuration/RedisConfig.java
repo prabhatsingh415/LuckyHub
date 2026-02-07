@@ -1,5 +1,7 @@
-package com.LuckyHub.Backend.Configuration;
+package com.LuckyHub.Backend.configuration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.BucketConfiguration;
 import io.github.bucket4j.distributed.ExpirationAfterWriteStrategy;
@@ -35,32 +37,30 @@ public class RedisConfig {
 
     // For caching
     @Bean
-    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory, ObjectMapper springObjectMapper) {
         //Default config
-        RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
-                .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(
-                                new GenericJackson2JsonRedisSerializer()
-                        )
-                )
-                .entryTtl(Duration.ofMinutes(10))
-                .disableCachingNullValues();
 
-        // Config for dashboardCache
-        RedisCacheConfiguration dashboardCacheConfig = RedisCacheConfiguration.defaultCacheConfig()
+        ObjectMapper redisMapper = springObjectMapper.copy();
+        redisMapper.activateDefaultTyping(
+                LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL
+        );
+        GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(redisMapper);
+
+        RedisCacheConfiguration baseConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .serializeValuesWith(
                         RedisSerializationContext.SerializationPair.fromSerializer(
-                                new GenericJackson2JsonRedisSerializer()
+                               serializer
                         )
                 )
-                .entryTtl(Duration.ofDays(1))
                 .disableCachingNullValues();
 
         Map<String, RedisCacheConfiguration> cacheConfigs = new HashMap<>();
-        cacheConfigs.put("dashboardCache", dashboardCacheConfig);
+        cacheConfigs.put("dashboardCache", baseConfig.entryTtl(Duration.ofDays(1)));
+        cacheConfigs.put("historyCache", baseConfig.entryTtl(Duration.ofHours(24)));
 
         return RedisCacheManager.builder(connectionFactory)
-                .cacheDefaults(defaultConfig)
+                .cacheDefaults(baseConfig.entryTtl(Duration.ofMinutes(10)))
                 .withInitialCacheConfigurations(cacheConfigs)
                 .build();
     }
