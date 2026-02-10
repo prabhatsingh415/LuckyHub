@@ -9,19 +9,16 @@ import com.LuckyHub.Backend.exception.PlansGiveawayLimitExceedException;
 import com.LuckyHub.Backend.exception.UserNotFoundException;
 import com.LuckyHub.Backend.exception.VideosFromDifferentChannelsException;
 import com.LuckyHub.Backend.model.*;
-import com.LuckyHub.Backend.repository.GiveawayHistoryRepository;
 import com.LuckyHub.Backend.repository.SubscriptionRepository;
 import com.LuckyHub.Backend.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.IntStream;
 
 @Slf4j
@@ -30,18 +27,14 @@ public class WinnerServiceImpl implements WinnerService {
 
     private final VideoService videoService;
     private final UserService userService;
-    private final SubscriptionRepository subscriptionRepository;
     private final GiveawayHistoryService giveawayHistoryService;
-    private final CacheManager cacheManager;
-    private final UserRepository userRepository;
+    private final SubscriptionService subscriptionService;
 
-    public WinnerServiceImpl(VideoService videoService, UserService userService, SubscriptionRepository subscriptionRepository, GiveawayHistoryRepository giveawayHistoryRepository, GiveawayHistoryService giveawayHistoryService, CacheManager cacheManager, UserRepository userRepository) {
+    public WinnerServiceImpl(VideoService videoService, UserService userService, GiveawayHistoryService giveawayHistoryService, SubscriptionService subscriptionService) {
         this.videoService = videoService;
         this.userService = userService;
-        this.subscriptionRepository = subscriptionRepository;
         this.giveawayHistoryService = giveawayHistoryService;
-        this.cacheManager = cacheManager;
-        this.userRepository = userRepository;
+        this.subscriptionService = subscriptionService;
     }
 
     @Transactional
@@ -91,11 +84,11 @@ public class WinnerServiceImpl implements WinnerService {
 
         if (subscription.getSubscriptionType() != SubscriptionTypes.DIAMOND) {
             subscription.setRemainingGiveaways(subscription.getRemainingGiveaways() - 1);
-            subscriptionRepository.save(subscription);
+            subscriptionService.save(subscription);
         }
 
-        user.setWinnersSelectedThisMonth(user.getWinnersSelectedThisMonth() + 1);
-        userRepository.save(user);
+        user.setWinnersSelectedThisMonth(user.getWinnersSelectedThisMonth() + winners.size());
+        userService.saveUser(user);
 
         GiveawayHistory history = GiveawayHistory.builder()
                 .userId(user.getId())

@@ -48,8 +48,12 @@ public class GiveawayHistoryServiceImpl implements GiveawayHistoryService{
                 giveawayHistoryRepository.findByUserId(userId);
 
         histories.forEach(h -> {
-            h.setWinners(new ArrayList<>(h.getWinners()));
-            h.setVideoDetails(new ArrayList<>(h.getVideoDetails()));
+            if (h.getWinners() != null) {
+                h.setWinners(new ArrayList<>(h.getWinners()));
+            }
+            if (h.getVideoDetails() != null) {
+                h.setVideoDetails(new ArrayList<>(h.getVideoDetails()));
+            }
         });
         return histories;
     }

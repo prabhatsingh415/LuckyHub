@@ -112,6 +112,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         log.info("Plan upgraded successfully for {}", user.getEmail());
     }
 
+    @Override
+    public void save(Subscription subscription) {
+        subscriptionRepository.save(subscription);
+    }
+
     @Scheduled(cron = "0 0 0 1 * ?") // monthly reset
     public void resetMonthlyQuota() {
         log.info("[Subscription-CRON] Starting monthly quota reset for all users...");
@@ -135,7 +140,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         Date today = new Date();
         Calendar cal = Calendar.getInstance();
         cal.setTime(today);
-        cal.add(Calendar.MONTH, 1); // add 1 mont
+        cal.add(Calendar.MONTH, 1); // add 1 month
         Date expiringDate  = cal.getTime();
 
         subscriptionRepository.bulkResetExpired(

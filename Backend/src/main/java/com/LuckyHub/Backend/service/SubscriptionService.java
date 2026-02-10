@@ -1,6 +1,7 @@
 package com.LuckyHub.Backend.service;
 
 import com.LuckyHub.Backend.entity.Payment;
+import com.LuckyHub.Backend.entity.Subscription;
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.model.SubscriptionResponse;
 import com.LuckyHub.Backend.model.SubscriptionTypes;
@@ -13,4 +14,6 @@ public interface SubscriptionService {
     SubscriptionResponse getUserSubscription(User user);
 
     void upgradeSubscription(User user, Payment payment);
+
+    void save(Subscription subscription);
 }
