@@ -135,11 +135,11 @@ public class VideoServiceImpl implements VideoService{
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(json);
             JsonNode tokenNode = root.get("nextPageToken");
-            if(tokenNode != null){
+            if (tokenNode != null && !tokenNode.isNull()) {
                 return tokenNode.asText();
             }
         } catch (Exception e) {
-           throw new RuntimeException("Something went wrong !");
+            throw new RuntimeException("Something went wrong !");
         }
         return null;
     }

@@ -35,6 +35,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     public SubscriptionTypes getPlanByAmount(BigDecimal subAmount) {
+
         for (SubscriptionTypes type : SubscriptionTypes.values()) {
             if (BigDecimal.valueOf(type.getPrice()).compareTo(subAmount) == 0) {
                 return type;
