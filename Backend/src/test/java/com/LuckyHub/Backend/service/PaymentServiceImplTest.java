@@ -162,7 +162,7 @@ class PaymentServiceImplTest {
         verify(paymentRepo).save(argThat(p -> p.getStatus() == PaymentStatus.SUCCESS));
     }
 
-    //  Verifies data integrity: Throwing error if success payment is missing date
+    // Throwing error if success payment is missing date
     @Test
     void getLastPayment_ShouldThrowException_WhenDateIsMissing() {
         samplePayment.setStatus(PaymentStatus.SUCCESS);
