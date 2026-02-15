@@ -3,11 +3,9 @@ package com.LuckyHub.Backend.service;
 import com.LuckyHub.Backend.entity.RefreshToken;
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.exception.RefreshTokenExpiredException;
-import com.LuckyHub.Backend.exception.UserNotFoundException;
 import com.LuckyHub.Backend.repository.RefreshTokenRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
-import org.hibernate.validator.internal.util.stereotypes.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
