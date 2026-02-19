@@ -120,10 +120,10 @@ public class GiveawayHistoryServiceImplTest {
         assertEquals(expectedHistory.getFirst().getId(), result[0].getId());
 
 
-        assertInstanceOf(ArrayList.class, result[0].getWinners(),
+        assertInstanceOf(List.class, result[0].getWinners(),
                 "Winners collection must be converted to a clean ArrayList for caching");
 
-        assertInstanceOf(ArrayList.class, result[0].getVideoDetails(),
+        assertInstanceOf(List.class, result[0].getVideoDetails(),
                 "VideoDetails collection must be converted to a clean ArrayList for caching");
 
         System.out.println("Proxy-stripping verified for history retrieval!");

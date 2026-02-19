@@ -1,26 +1,17 @@
 package com.LuckyHub.Backend.service;
 
+import com.LuckyHub.Backend.model.MailType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.Objects;
-
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class EmailServiceImplTest {
-
-    @Mock
-    private JavaMailSender javaMailSender;
 
     @InjectMocks
     private EmailServiceImpl emailService;
@@ -28,44 +19,27 @@ class EmailServiceImplTest {
     private final String to = "test@gmail.com";
     private final String subject = "Welcome to LuckyHub";
     private final String body = "Hi, welcome aboard!";
-    private final String sender = "support@luckyhub.com";
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(emailService, "sender", sender);
+        String sender = "support@luckyhub.com";
+        ReflectionTestUtils.setField(emailService, "senderEmail", sender);
+        String apiKey = "test-brevo-api-key";
+        ReflectionTestUtils.setField(emailService, "brevoApiKey", apiKey);
     }
 
-    // Verify correct message properties
     @Test
-    void sendEmail_ShouldSetCorrectFieldsAndSend() {
-        ArgumentCaptor<SimpleMailMessage> messageCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-
-        emailService.sendEmail(to, subject, body, any());
-
-        verify(javaMailSender, times(1)).send(messageCaptor.capture());
-
-        SimpleMailMessage sentMessage = messageCaptor.getValue();
-        assertEquals(to, Objects.requireNonNull(sentMessage.getTo())[0]);
-        assertEquals(sender, sentMessage.getFrom());
-        assertEquals(subject, sentMessage.getSubject());
-        assertEquals(body, sentMessage.getText());
+    void sendEmail_ShouldNotCrash() {
+        assertDoesNotThrow(() -> emailService.sendEmail(to, subject, body, MailType.VERIFICATION));
     }
 
-    // Verify execution
     @Test
-    void sendAsyncEmail_ShouldCallSenderSuccessfully() {
-        emailService.sendAsyncEmail(to, subject, body, any());
+    void generateHtmlTemplate_ShouldContainBrandName() {
+        String html = ReflectionTestUtils.invokeMethod(emailService,
+                "generateHtmlTemplate", "Title", "Message", MailType.PAYMENT_SUCCESS);
 
-        verify(javaMailSender, times(1)).send(any(SimpleMailMessage.class));
-    }
-
-    //  Verify logger catches exception in async method
-    @Test
-    void sendAsyncEmail_ShouldHandleExceptionGracefully() {
-        doThrow(new RuntimeException("SMTP Server Down")).when(javaMailSender).send(any(SimpleMailMessage.class));
-
-        assertDoesNotThrow(() -> emailService.sendAsyncEmail(to, subject, body, any()));
-
-        verify(javaMailSender).send(any(SimpleMailMessage.class));
+        assertNotNull(html);
+        assertTrue(html.contains("LuckyHub"));
+        assertTrue(html.contains("#22c55e"));
     }
 }

@@ -18,8 +18,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
@@ -35,6 +37,7 @@ class UserServiceImplTest {
     @Mock
     private UserRepository userRepository;
     @Mock private AuthenticationManager authenticationManager;
+    @Mock private BCryptPasswordEncoder bCryptPasswordEncoder;
     @Mock private JWTServiceImpl jwtService;
     @Mock private ApplicationEventPublisher publisher;
     @Mock private RefreshTokenService refreshTokenService;
@@ -43,6 +46,7 @@ class UserServiceImplTest {
     @Mock private RateLimiterService rateLimiterService;
     @Mock private VerificationTokenService verificationTokenService;
     @Mock private OtpService otpService;
+    @Mock private CacheManager cacheManager;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -71,6 +75,7 @@ class UserServiceImplTest {
     void registerNewUser_ShouldSaveUserAndPublishEvent() {
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(rateLimiterService.tryConsume(anyString(), anyString(), anyInt())).thenReturn(false);
+        when(bCryptPasswordEncoder.encode(anyString())).thenReturn("encoded_pass");
 
         String token = userService.registerNewUser(sampleModel);
 
@@ -120,6 +125,7 @@ class UserServiceImplTest {
     void processAccountDeletion_ShouldCleanupDataAndDeleteUser() {
         String email = "test@luckyhub.com";
         String otp = "123456";
+        when(cacheManager.getCache("historyCache")).thenReturn(null);
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(sampleUser));
 
         userService.processAccountDeletion(email, otp);

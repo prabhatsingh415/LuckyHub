@@ -56,8 +56,11 @@ class GiveawayControllerTest {
     @WithMockUser(username = "test@luckyhub.com")
     void getHistory_ShouldReturnList() throws Exception {
         when(userService.findUserIdByEmail("test@luckyhub.com")).thenReturn(1L);
-        when(giveawayHistoryService.history(1L)).thenReturn(new GiveawayHistoryDTO[]{});
-
+        GiveawayHistoryDTO dummyHistory = GiveawayHistoryDTO.builder()
+                .id(1L)
+                .userId(1L)
+                .build();
+        when(giveawayHistoryService.history(1L)).thenReturn(new GiveawayHistoryDTO[]{dummyHistory});
         mockMvc.perform(get("/giveaway/history"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));

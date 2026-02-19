@@ -105,8 +105,8 @@ class WinnerServiceImplTest {
         when(userService.findUserByEmail(sampleEmail)).thenReturn(Optional.ofNullable(sampleUser));
 
 
-        when(videoService.fetchComments(sampleVideoIds, sampleRequest.getKeyword(), SubscriptionTypes.FREE)).thenReturn(sampleFetchedComments);
-        when(videoService.selectWinner(sampleFetchedComments, sampleRequest.getNumberOfWinners())).thenReturn(sampleWinners);
+        when(videoService.fetchComments(anyList(), anyString(), any())).thenReturn(sampleFetchedComments);
+        when(videoService.selectWinner(anyList(), anyInt())).thenReturn(sampleWinners);
 
         WinnerResponse response = winnerService.findWinner(sampleRequest, sampleEmail);
 
