@@ -1,6 +1,8 @@
 package com.LuckyHub.Backend.service;
 
 import com.LuckyHub.Backend.entity.GiveawayHistory;
+import com.LuckyHub.Backend.model.GiveawayHistoryDTO;
+import com.LuckyHub.Backend.model.VideoDetailDTO;
 import com.LuckyHub.Backend.repository.GiveawayHistoryRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -43,19 +45,29 @@ public class GiveawayHistoryServiceImpl implements GiveawayHistoryService{
     @Override
     @Cacheable(value = "historyCache", key = "#userId")
     @Transactional
-    public List<GiveawayHistory> history(long userId) {
-        List<GiveawayHistory> histories =
-                giveawayHistoryRepository.findByUserId(userId);
+    public GiveawayHistoryDTO[] history(long userId) {
 
-        histories.forEach(h -> {
-            if (h.getWinners() != null) {
-                h.setWinners(new ArrayList<>(h.getWinners()));
-            }
-            if (h.getVideoDetails() != null) {
-                h.setVideoDetails(new ArrayList<>(h.getVideoDetails()));
-            }
-        });
-        return histories;
+        List<GiveawayHistory> entities = giveawayHistoryRepository.findByUserId(userId);
+
+        List<GiveawayHistoryDTO> list = entities.stream().map(entity ->
+                GiveawayHistoryDTO.builder()
+                        .id(entity.getId())
+                        .userId(entity.getUserId())
+                        .winners(entity.getWinners() != null ? new ArrayList<>(entity.getWinners()) : null)
+                        .winnersCount(entity.getWinnersCount())
+                        .commentCount(entity.getCommentCount())
+                        .keywordUsed(entity.getKeywordUsed())
+                        .loyaltyFilterApplied(entity.isLoyaltyFilterApplied())
+                        .createdAt(entity.getCreatedAt())
+                        .videoDetails(entity.getVideoDetails() != null ?
+                                entity.getVideoDetails().stream()
+                                        .map(v -> new VideoDetailDTO(v.getVideoId(), v.getThumbnail(), v.getTitle()))
+                                        .toList()
+                                : null)
+                        .build()
+        ).toList();
+
+        return list.toArray(new GiveawayHistoryDTO[0]);
     }
 
     @Transactional

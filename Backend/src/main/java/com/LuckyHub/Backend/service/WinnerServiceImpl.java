@@ -4,10 +4,7 @@ import com.LuckyHub.Backend.entity.GiveawayHistory;
 import com.LuckyHub.Backend.entity.Subscription;
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.entity.VideoDetail;
-import com.LuckyHub.Backend.exception.PlanLimitExceedException;
-import com.LuckyHub.Backend.exception.PlansGiveawayLimitExceedException;
-import com.LuckyHub.Backend.exception.UserNotFoundException;
-import com.LuckyHub.Backend.exception.VideosFromDifferentChannelsException;
+import com.LuckyHub.Backend.exception.*;
 import com.LuckyHub.Backend.model.*;
 import com.LuckyHub.Backend.repository.SubscriptionRepository;
 import com.LuckyHub.Backend.repository.UserRepository;
@@ -18,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -42,8 +40,13 @@ public class WinnerServiceImpl implements WinnerService {
     @CacheEvict(value = "dashboardCache", key = "#email")
     public WinnerResponse findWinner(WinnerRequest request, String email) {
         log.info("find a winner request reached !");
+
         List<String> videoIds = request.getVideoLinks().stream()
                 .map(videoService::extractVideoId).toList();
+
+        if (videoIds.isEmpty()) {
+            throw new VideoIdNotFoundExeption("Video ids not found !");
+        }
 
         VideoMetadata metadata = videoService.getVideoMetadata(videoIds);
 
@@ -67,7 +70,19 @@ public class WinnerServiceImpl implements WinnerService {
         }
 
         List<Comment> fetchedComments = videoService.fetchComments(videoIds, request.getKeyword(), subscription.getSubscriptionType());
-        List<Comment> winners = videoService.selectWinner(fetchedComments, request.getNumberOfWinners());
+        List<Comment> eligibleComments = fetchedComments;
+
+        if (request.getKeyword() != null && !request.getKeyword().isBlank()) {
+            eligibleComments = fetchedComments.stream()
+                    .filter(Comment::isContainsKeyword)
+                    .toList();
+        }
+
+        List<Comment> winners = videoService.selectWinner(
+                eligibleComments,
+                request.getNumberOfWinners()
+        );
+
         List<VideoDetail> videoDetails = IntStream.range(0, metadata.getVideoIds().size())
                 .mapToObj(i -> new VideoDetail(
                         metadata.getVideoIds().get(i),

@@ -14,8 +14,10 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -46,6 +48,7 @@ public class UserServiceImpl implements UserService{
     private final VerificationTokenService verificationTokenService;
     private final PasswordService passwordService;
     private final OtpService otpService;
+    private final CacheManager cacheManager;
 
     @Value("${ResendTokenUrl}")
     private String resendVerificationEmailURL;
@@ -72,7 +75,7 @@ public class UserServiceImpl implements UserService{
 
         publisher.publishEvent(new RegistrationCompleteEvent(
                 user,
-                "http://localhost:5173/verify_user",
+                baseURL +"/verify_user",
                 token
         ));
 
@@ -250,14 +253,24 @@ public class UserServiceImpl implements UserService{
 
     @Override
     @Transactional
-    @CacheEvict(value = "dashboardCache", key = "#email")
+    @Caching(evict = {
+            @CacheEvict(value = "dashboardCache", key = "#email"),
+            @CacheEvict(value = "rate:signUp", key = "#email"),
+    })
     public ResponseCookie processAccountDeletion(String email, String otp) {
         otpService.verifyDeleteOTP(email, otp);
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
+        if (cacheManager.getCache("historyCache") != null) {
+            cacheManager.getCache("historyCache").evict(user.getId());
+            log.info("Evicted historyCache for User ID: {}", user.getId());
+        }
+
         //data clean up
+        verificationTokenService.deleteByUser(user);
+        refreshTokenService.deleteByUser(user);
         giveawayHistoryService.deleteHistory(user.getId());
         paymentService.deletePayment(user.getId());
         rateLimiterService.clearLimit(user.getId());

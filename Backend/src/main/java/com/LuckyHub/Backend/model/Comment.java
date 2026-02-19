@@ -26,4 +26,5 @@ public class Comment {
     private Set<String> participatedVideoIds = new HashSet<>();
     private Instant earliestCommentTime;
     private int frequency;
+    private String authorChannelId;
 }

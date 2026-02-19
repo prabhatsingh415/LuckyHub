@@ -1,6 +1,7 @@
 package com.LuckyHub.Backend.controller;
 
 import com.LuckyHub.Backend.entity.GiveawayHistory;
+import com.LuckyHub.Backend.model.GiveawayHistoryDTO;
 import com.LuckyHub.Backend.model.WinnerRequest;
 import com.LuckyHub.Backend.model.WinnerResponse;
 import com.LuckyHub.Backend.service.*;
@@ -55,7 +56,7 @@ class GiveawayControllerTest {
     @WithMockUser(username = "test@luckyhub.com")
     void getHistory_ShouldReturnList() throws Exception {
         when(userService.findUserIdByEmail("test@luckyhub.com")).thenReturn(1L);
-        when(giveawayHistoryService.history(1L)).thenReturn(List.of(new GiveawayHistory()));
+        when(giveawayHistoryService.history(1L)).thenReturn(new GiveawayHistoryDTO[]{});
 
         mockMvc.perform(get("/giveaway/history"))
                 .andExpect(status().isOk())

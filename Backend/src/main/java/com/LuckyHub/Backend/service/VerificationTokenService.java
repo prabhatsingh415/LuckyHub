@@ -14,6 +14,8 @@ public interface VerificationTokenService {
     Optional<VerificationToken> findTokenByOldToken(String oldToken);
 
     void saveToken(VerificationToken verificationToken);
+
+    void deleteByUser(User user);
 }
 
 

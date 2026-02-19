@@ -4,6 +4,7 @@ import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.event.ResendVerificationTokenEvent;
 import com.LuckyHub.Backend.exception.EmailSendingFailedException;
 import com.LuckyHub.Backend.exception.UserEmailNotFoundException;
+import com.LuckyHub.Backend.model.MailType;
 import com.LuckyHub.Backend.repository.VerificationTokenRepository;
 import com.LuckyHub.Backend.service.EmailService;
 import com.LuckyHub.Backend.service.UserService;
@@ -31,22 +32,14 @@ public class ResendVerificationTokenEventListener implements ApplicationListener
             throw new UserEmailNotFoundException("User email is missing or empty");
         }
 
-        // generate token and update
         userService.saveVerificationTokenForUser(user, event.getToken());
 
         String url = event.getUrl() + "?token=" + event.getToken();
 
-        String body = "Hello " + user.getFirstName() + ",\n\n" +
-                "We noticed you requested a new verification link.\n" +
-                "Please click the link below to verify your account:\n\n" +
-                url + "\n\n" +
-                "If you did not request this, please ignore this email.\n\n" +
-                "Thanks,\nLuckyHub Team";
-
         try {
-            emailService.sendEmail(user.getEmail(), "LuckyHub | Resend Verification Link", body);
+            emailService.sendEmail(user.getEmail(), "LuckyHub | New Verification Link", url, MailType.RESEND_VERIFICATION);
         } catch (Exception e) {
-            throw new EmailSendingFailedException("Failed to send verification email to " + user.getEmail(), e);
+            throw new EmailSendingFailedException("Failed to send verification email", e);
         }
     }
 }

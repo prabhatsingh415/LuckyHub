@@ -2,6 +2,7 @@ package com.LuckyHub.Backend.service;
 
 import com.LuckyHub.Backend.entity.GiveawayHistory;
 import com.LuckyHub.Backend.entity.VideoDetail;
+import com.LuckyHub.Backend.model.GiveawayHistoryDTO;
 import com.LuckyHub.Backend.repository.GiveawayHistoryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -114,15 +115,15 @@ public class GiveawayHistoryServiceImplTest {
                 List.of(sampleHistory);
 
         when(giveawayHistoryRepository.findByUserId(userId)).thenReturn(expectedHistory);
-        List<GiveawayHistory> result = giveawayHistoryService.history(userId);
-        assertEquals(expectedHistory.size(), result.size());
-        assertEquals(expectedHistory.getFirst().getId(), result.getFirst().getId());
+        GiveawayHistoryDTO[] result = giveawayHistoryService.history(userId);
+        assertEquals(expectedHistory.size(), result.length);
+        assertEquals(expectedHistory.getFirst().getId(), result[0].getId());
 
 
-        assertInstanceOf(ArrayList.class, result.getFirst().getWinners(),
+        assertInstanceOf(ArrayList.class, result[0].getWinners(),
                 "Winners collection must be converted to a clean ArrayList for caching");
 
-        assertInstanceOf(ArrayList.class, result.getFirst().getVideoDetails(),
+        assertInstanceOf(ArrayList.class, result[0].getVideoDetails(),
                 "VideoDetails collection must be converted to a clean ArrayList for caching");
 
         System.out.println("Proxy-stripping verified for history retrieval!");
@@ -139,9 +140,9 @@ public class GiveawayHistoryServiceImplTest {
         when(giveawayHistoryRepository.findByUserId(userId)).thenReturn(List.of(historyWithNulls));
 
         assertDoesNotThrow(() -> {
-            List<GiveawayHistory> result = giveawayHistoryService.history(userId);
-            assertNull(result.getFirst().getWinners(), "Should remain null or handle safely");
-            assertNull(result.getFirst().getVideoDetails(), "Should remain null or handle safely");
+            GiveawayHistoryDTO[] result = giveawayHistoryService.history(userId);
+            assertNull(result[0].getWinners(), "Should remain null or handle safely");
+            assertNull(result[0].getVideoDetails(), "Should remain null or handle safely");
         });
     }
 
@@ -152,9 +153,9 @@ public class GiveawayHistoryServiceImplTest {
 
         when(giveawayHistoryRepository.findByUserId(userId)).thenReturn(List.of());
 
-        List<GiveawayHistory> result = giveawayHistoryService.history(userId);
+        GiveawayHistoryDTO[] result = giveawayHistoryService.history(userId);
 
-        assertTrue(result.isEmpty(), "Result should be empty for non-existent user history");
+        assertEquals(0, result.length, "Result should be empty for non-existent user history");
 
         verify(giveawayHistoryRepository, times(1)).findByUserId(userId);
     }

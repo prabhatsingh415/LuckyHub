@@ -1,6 +1,7 @@
 package com.LuckyHub.Backend.listener;
 
 import com.LuckyHub.Backend.event.AccountDeleteEvent;
+import com.LuckyHub.Backend.model.MailType;
 import com.LuckyHub.Backend.service.EmailService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,19 +20,14 @@ public class AccountDeleteEventListener implements ApplicationListener<AccountDe
     @Override
     public void onApplicationEvent(AccountDeleteEvent event) {
         String email = event.getEmail();
-        int otp = event.getOtp();
-        String subject = "Important: Verify Your Account Deletion - LuckyHub";
+        String otpString = String.valueOf(event.getOtp());
 
-        String body = String.format(
-                "Hi,\n\n" +
-                        "You've requested to delete your LuckyHub account. Use the code below to proceed:\n\n" +
-                        "OTP: %s\n\n" +
-                        "Note: This code will expire in 10 minutes. If this wasn't you, no further action is needed.\n\n" +
-                        "Stay safe,\n" +
-                        "LuckyHub Support",
-                otp
-        );
+        String subject = "LuckyHub | Action Required: Account Deletion Code 🚨";
 
-        emailService.sendEmail(email, subject, body);
+        try {
+            emailService.sendEmail(email, subject, otpString, MailType.ACCOUNT_DELETE);
+        } catch (Exception e) {
+            log.error("Failed to send account deletion email to {}", email, e);
+        }
     }
 }

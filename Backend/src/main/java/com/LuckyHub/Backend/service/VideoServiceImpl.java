@@ -33,7 +33,10 @@ public class VideoServiceImpl implements VideoService{
         Map<String, Comment> authorMap = new HashMap<>();
         int totalFetchedAcrossAllVideos = 0;
 
+        String videoOwnerChannelId = getVideoOwnerChannelId(videoIds.getFirst());
+
         for (String videoId : videoIds) {
+
             if (totalFetchedAcrossAllVideos >= maxCommentsLimit) break;
             String nextPageToken = null;
 
@@ -45,7 +48,7 @@ public class VideoServiceImpl implements VideoService{
 
 
                 String json = restTemplate.getForObject(url, String.class);
-                List<Comment> comments = parseCommentsFromJson(json, videoId, keyword);
+                List<Comment> comments = this.parseCommentsFromJson(json, videoId, keyword);
 
                 // Global limit check
                 int remainingGlobal = maxCommentsLimit - totalFetchedAcrossAllVideos;
@@ -54,16 +57,42 @@ public class VideoServiceImpl implements VideoService{
                 }
 
                 for (Comment c : comments) {
-                    String key = c.getAuthorName();
+                    String authorChannelId = null;
+
+                    if (c.getAuthorChannelUrl() != null &&
+                            c.getAuthorChannelUrl().contains("/channel/")) {
+                        authorChannelId = extractChannelIdFromUrl(c.getAuthorChannelUrl());
+                    }
+
+                    if (authorChannelId != null &&
+                            authorChannelId.equals(videoOwnerChannelId)) {
+                        continue;   // skip owner
+                    }
+
+                    if (c.getAuthorChannelUrl() == null) {
+                        continue;
+                    }
+
+                    String key = c.getAuthorChannelUrl();
+
                     authorMap.merge(key, c, (existing, incoming) -> {
 
                         existing.setFrequency(existing.getFrequency() + 1);
 
                         existing.getParticipatedVideoIds().add(incoming.getVideoId());
 
-                        if (incoming.getEarliestCommentTime().isBefore(existing.getEarliestCommentTime())) {
-                            existing.setEarliestCommentTime(incoming.getEarliestCommentTime());
+                        if (!existing.isContainsKeyword() &&
+                                incoming.isContainsKeyword()) {
+                            existing.setContainsKeyword(true);
+                            existing.setCommentUrl(incoming.getCommentUrl());
                         }
+
+                        if (incoming.getEarliestCommentTime()
+                                .isBefore(existing.getEarliestCommentTime())) {
+                            existing.setEarliestCommentTime(
+                                    incoming.getEarliestCommentTime());
+                        }
+
                         return existing;
                     });
                 }
@@ -75,11 +104,10 @@ public class VideoServiceImpl implements VideoService{
 
         return authorMap.values().stream()
                 .sorted(Comparator
-                        // 1. Give priority to users who engaged with more unique videos
-                        .comparingInt((Comment c) -> c.getParticipatedVideoIds().size()).reversed()
-                        // 2. If video count is same, rank by total number of comments (Frequency)
-                        .thenComparing(Comparator.comparingInt(Comment::getFrequency).reversed())
-                        // 3. Final tie-breaker: The user who commented the earliest
+                        .comparingInt((Comment c) ->
+                                c.getParticipatedVideoIds().size()).reversed()
+                        .thenComparing(
+                                Comparator.comparingInt(Comment::getFrequency).reversed())
                         .thenComparing(Comment::getEarliestCommentTime))
                 .toList();
     }
@@ -98,7 +126,7 @@ public class VideoServiceImpl implements VideoService{
                     JsonNode snippet = topLevelComment.get("snippet");
 
                     String commentId = topLevelComment.get("id").asText();
-                    String message = snippet.get("textDisplay").asText();
+                    String message = snippet.get("textOriginal").asText();
                     Instant publishedAt = Instant.parse(snippet.get("publishedAt").asText());
 
                     // Keyword logic check
@@ -119,7 +147,6 @@ public class VideoServiceImpl implements VideoService{
                             .participatedVideoIds(new HashSet<>(Set.of(videoId)))
                             .earliestCommentTime(publishedAt)
                             .build();
-
                     comments.add(comment);
                 }
             }
@@ -221,6 +248,39 @@ public class VideoServiceImpl implements VideoService{
 
         log.info("[Video Service]:video Id extracted successfully !");
         return videoId;
+    }
+
+    private String extractChannelIdFromUrl(String url) {
+
+        if (url == null) return null;
+
+        if (url.contains("/channel/")) {
+            return url.substring(url.lastIndexOf("/") + 1);
+        }
+
+        return null;
+    }
+
+    private String getVideoOwnerChannelId(String videoId) {
+
+        String url = String.format(
+                "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=%s&key=%s",
+                videoId, apiKey
+        );
+
+        try {
+            JsonNode root = new ObjectMapper()
+                    .readTree(restTemplate.getForObject(url, String.class));
+
+            return root.get("items")
+                    .get(0)
+                    .get("snippet")
+                    .get("channelId")
+                    .asText();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch owner channel id");
+        }
     }
 
 }

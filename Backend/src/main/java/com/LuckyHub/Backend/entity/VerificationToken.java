@@ -37,10 +37,12 @@ public class VerificationToken {
         this.expirationTime = calculateTime();
         this.lastTokenSendTime = lastTokenSendTime;
     }
+
     public VerificationToken(String token) {
         this.token = token;
         this.expirationTime = calculateTime();
     }
+
     private Date calculateTime() {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(new Date().getTime());

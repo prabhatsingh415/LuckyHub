@@ -40,7 +40,7 @@ class EmailServiceImplTest {
     void sendEmail_ShouldSetCorrectFieldsAndSend() {
         ArgumentCaptor<SimpleMailMessage> messageCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
 
-        emailService.sendEmail(to, subject, body);
+        emailService.sendEmail(to, subject, body, any());
 
         verify(javaMailSender, times(1)).send(messageCaptor.capture());
 
@@ -54,7 +54,7 @@ class EmailServiceImplTest {
     // Verify execution
     @Test
     void sendAsyncEmail_ShouldCallSenderSuccessfully() {
-        emailService.sendAsyncEmail(to, subject, body);
+        emailService.sendAsyncEmail(to, subject, body, any());
 
         verify(javaMailSender, times(1)).send(any(SimpleMailMessage.class));
     }
@@ -64,7 +64,7 @@ class EmailServiceImplTest {
     void sendAsyncEmail_ShouldHandleExceptionGracefully() {
         doThrow(new RuntimeException("SMTP Server Down")).when(javaMailSender).send(any(SimpleMailMessage.class));
 
-        assertDoesNotThrow(() -> emailService.sendAsyncEmail(to, subject, body));
+        assertDoesNotThrow(() -> emailService.sendAsyncEmail(to, subject, body, any()));
 
         verify(javaMailSender).send(any(SimpleMailMessage.class));
     }

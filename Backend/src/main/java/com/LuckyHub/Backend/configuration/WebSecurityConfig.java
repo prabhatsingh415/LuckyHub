@@ -1,6 +1,7 @@
 package com.LuckyHub.Backend.configuration;
 
 import com.LuckyHub.Backend.service.CustomUserDetailsService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,6 +27,9 @@ public class WebSecurityConfig {
     private final CustomUserDetailsService userDetailsService;
 
     private final JWTAuthenticationFilter jwtAuthenticationFilter;
+
+    @Value("${FRONTEND_BASE_URL}")
+    private String frontedURL;
 
     public WebSecurityConfig(CustomUserDetailsService userDetailsService, JWTAuthenticationFilter jwtAuthenticationFilter) {
         this.userDetailsService = userDetailsService;
@@ -61,7 +65,7 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173")); //  frontend URL
+        configuration.setAllowedOrigins(List.of(frontedURL));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
         configuration.setAllowCredentials(true);

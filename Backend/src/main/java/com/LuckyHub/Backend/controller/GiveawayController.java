@@ -1,6 +1,7 @@
 package com.LuckyHub.Backend.controller;
 
 import com.LuckyHub.Backend.entity.GiveawayHistory;
+import com.LuckyHub.Backend.model.GiveawayHistoryDTO;
 import com.LuckyHub.Backend.model.WinnerRequest;
 import com.LuckyHub.Backend.model.WinnerResponse;
 import com.LuckyHub.Backend.service.GiveawayHistoryService;
@@ -36,12 +37,14 @@ public class GiveawayController {
     }
 
     @GetMapping("/history")
-    public ResponseEntity<List<GiveawayHistory>> getHistory(@AuthenticationPrincipal UserDetails userDetails){
+    public ResponseEntity<List<GiveawayHistoryDTO>> getHistory(@AuthenticationPrincipal UserDetails userDetails){
         String email = userDetails.getUsername();
         log.info("Fetching giveaway history for: {}", email);
         Long userId = userService.findUserIdByEmail(email);
 
-        List<GiveawayHistory> history = giveawayHistoryService.history(userId);
-        return ResponseEntity.ok(history);
+        GiveawayHistoryDTO[] historyArray = giveawayHistoryService.history(userId);
+
+        return ResponseEntity.ok(List.of(historyArray));
     }
+
 }

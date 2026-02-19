@@ -2,6 +2,7 @@ package com.LuckyHub.Backend.listener;
 
 import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.event.PaymentSuccessfulEvent;
+import com.LuckyHub.Backend.model.MailType;
 import com.LuckyHub.Backend.service.EmailService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,7 @@ public class PaymentSuccessfulEventListener {
             log.info("[PAYMENT-EVENT] Attempting to send success email to: {} for Order: {}",
                     user.getEmail(), orderId);
 
-            emailService.sendAsyncEmail(user.getEmail(), subject, msgBody);
+            emailService.sendAsyncEmail(user.getEmail(), subject, msgBody, MailType.PAYMENT_SUCCESS);
 
             log.info("[PAYMENT-EVENT] SUCCESS: Email delivered to {} for Order: {}",
                     user.getEmail(), orderId);
@@ -48,21 +49,19 @@ public class PaymentSuccessfulEventListener {
 
     private String generateEmailBody(User user, PaymentSuccessfulEvent event) {
         return """
-            Hi %s %s,
-            
-            Great news! We have successfully received your payment for the %s. 
-            Your subscription is now active.
-            
-            Order Details:
-            --------------------------
-            Order ID:   %s
-            Payment ID: %s
-            Plan:       %s
-            Amount:     ₹%s
-            --------------------------
-            
-            Team LuckyHub
-            """.formatted(
+        Hi %s %s,
+        
+        Great news! We've received your payment for the <b>%s</b> plan. Your subscription is now active.
+        
+        <b>Order Details:</b>
+        <b>Order ID:</b>   %s
+        <b>Payment ID:</b> %s
+        <b>Plan:</b>       %s
+        <b>Amount:</b>     ₹%s
+        
+        Best Regards,
+        Team LuckyHub
+        """.formatted(
                 user.getFirstName(), user.getLastName(), event.getPlanName(),
                 event.getOrderId(), event.getPaymentId(), event.getPlanName(), event.getAmount()
         );

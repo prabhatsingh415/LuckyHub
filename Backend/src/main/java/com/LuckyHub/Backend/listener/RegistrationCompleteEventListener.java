@@ -4,6 +4,7 @@ import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.event.RegistrationCompleteEvent;
 import com.LuckyHub.Backend.exception.UserEmailNotFoundException;
 import com.LuckyHub.Backend.exception.EmailSendingFailedException;
+import com.LuckyHub.Backend.model.MailType;
 import com.LuckyHub.Backend.service.EmailService;
 import com.LuckyHub.Backend.service.UserService;
 import lombok.AllArgsConstructor;
@@ -23,28 +24,16 @@ public class RegistrationCompleteEventListener implements ApplicationListener<Re
 
     @Override
     public void onApplicationEvent(RegistrationCompleteEvent event) {
-
         User user = event.getUser();
-        if (user == null) {
-            throw new UserEmailNotFoundException("User not found for registration email");
-        }
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
-            throw new UserEmailNotFoundException("User email is missing or empty");
-        }
 
         userService.saveVerificationTokenForUser(user, event.getToken());
-
         String url = event.getUrl() + "?token=" + event.getToken();
 
-        String body = "Hello " + user.getFirstName() + ",\n\n" +
-                "Please click the link below to verify your account:\n" +
-                url + "\n\n" +
-                "Thanks,\nLuckyHub Team";
-
         try {
-            emailService.sendEmail(user.getEmail(), "LuckyHub | Verify Your Email Address", body);
+            emailService.sendEmail(user.getEmail(), "LuckyHub | Verify Your Email Address", url, MailType.VERIFICATION);
+            emailService.sendEmail(user.getEmail(), "habibi", "Okk", MailType.PAYMENT_REFUND);
         } catch (Exception e) {
-            throw new EmailSendingFailedException("Failed to send registration email to " + user.getEmail(), e);
+            throw new EmailSendingFailedException("Failed to send registration email", e);
         }
     }
 }

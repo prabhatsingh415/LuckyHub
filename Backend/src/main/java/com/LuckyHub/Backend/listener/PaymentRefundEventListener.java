@@ -4,8 +4,8 @@ import com.LuckyHub.Backend.entity.User;
 import com.LuckyHub.Backend.event.PaymentRefundEvent;
 import com.LuckyHub.Backend.exception.EmailSendingFailedException;
 import com.LuckyHub.Backend.exception.UserEmailNotFoundException;
+import com.LuckyHub.Backend.model.MailType;
 import com.LuckyHub.Backend.service.EmailService;
-import com.LuckyHub.Backend.service.UserService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationListener;
@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @AllArgsConstructor
 public class PaymentRefundEventListener implements ApplicationListener<PaymentRefundEvent> {
-    private final UserService userService;
     private final EmailService emailService;
 
     @Override
@@ -34,16 +33,16 @@ public class PaymentRefundEventListener implements ApplicationListener<PaymentRe
 
         String msgBody = """
         Hi %s %s,
-        
-        We noticed a technical glitch while processing your payment for the %s. 
+
+        We noticed a technical glitch while processing your payment for the %s.
         
         What happened?
-        Even if your bank has deducted or "held" the amount, the transaction was NOT completed on our end. 
+        Even if your bank has deducted or "held" the amount, the transaction was NOT completed on our end.
         Because of this, your subscription is currently not active.
         
         Don't worry about your money:
-        Since we haven't "captured" the payment, your bank will automatically refund the amount 
-        to your account within 5-7 business days. You don't need to raise any support tickets; 
+        Since we haven't "captured" the payment, your bank will automatically refund the amount
+        to your account within 5-7 business days. You don't need to raise any support tickets;
         the banking system handles this return process automatically.
         
         Order Details:
@@ -54,7 +53,7 @@ public class PaymentRefundEventListener implements ApplicationListener<PaymentRe
         --------------------------
         
         What next?
-        You can try the payment again from your Dashboard. We suggest checking your 
+        You can try the payment again from your Dashboard. We suggest checking your
         internet connection or trying a different payment method.
         
         Sorry for the inconvenience!
@@ -70,7 +69,7 @@ public class PaymentRefundEventListener implements ApplicationListener<PaymentRe
             );
 
         try {
-            emailService.sendEmail(user.getEmail(), subject, msgBody);
+            emailService.sendEmail(user.getEmail(), subject, msgBody, MailType.PAYMENT_REFUND);
         } catch (Exception e) {
             throw new EmailSendingFailedException("Failed to send verification email to " + user.getEmail(), e);
         }

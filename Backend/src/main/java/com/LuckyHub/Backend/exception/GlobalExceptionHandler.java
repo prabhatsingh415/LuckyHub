@@ -46,7 +46,8 @@ public class GlobalExceptionHandler {
             UserEmailNotFoundException.class,
             PaymentNotFoundException.class,
             VerificationTokenNotFoundException.class,
-            RefreshTokenNotFoundException.class
+            RefreshTokenNotFoundException.class,
+            VideoIdNotFoundExeption.class
     })
     public ResponseEntity<ErrorResponse> handleNotFound(Exception ex) {
         return buildResponse(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
