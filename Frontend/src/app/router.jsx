@@ -54,8 +54,9 @@ export const router = createBrowserRouter([
       },
     ],
   },
+
   {
     path: "*",
-    element: <ProtectedRoute element={<NotFound />} />,
+    element: <NotFound />,
   },
 ]);
