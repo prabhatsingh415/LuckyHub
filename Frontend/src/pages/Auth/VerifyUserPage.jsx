@@ -5,7 +5,7 @@ import {
   useVerifyUserQuery,
   useLazyResendVerificationQuery,
 } from "../../Redux/slices/apiSlice";
-import { setCredentials } from "../../Redux/slices/authSlice"; // Adjust path to your auth slice
+import { setCredentials } from "../../Redux/slices/credentialSlice";
 import { Loader } from "../../components/Common";
 
 function VerifyUserPage() {
@@ -20,7 +20,6 @@ function VerifyUserPage() {
   const [triggerResend, { isLoading: isResending, isSuccess: resendSuccess }] =
     useLazyResendVerificationQuery();
 
-  // ✨ AUTO-LOGIN LOGIC: Dispatch credentials as soon as verification succeeds
   useEffect(() => {
     if (isSuccess && data?.token && data?.user) {
       dispatch(
@@ -30,7 +29,6 @@ function VerifyUserPage() {
         })
       );
 
-      // Optional: Small delay so the user can see the "Verified" celebration
       const timer = setTimeout(() => {
         handleContinue();
       }, 2000);
@@ -55,7 +53,6 @@ function VerifyUserPage() {
     localStorage.removeItem("SignUpToken");
     localStorage.removeItem("redirectEndpoint");
 
-    // Use navigate for a smooth SPA transition without page reload
     navigate(redirectEndpoint);
   };
 
