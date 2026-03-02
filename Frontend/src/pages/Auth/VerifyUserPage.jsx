@@ -7,7 +7,6 @@ import {
 } from "../../Redux/slices/apiSlice";
 import { setCredentials } from "../../Redux/slices/credentialSlice";
 import { Loader } from "../../components/Common";
-
 import { setAuth } from "../../Redux/slices/authSlice";
 function VerifyUserPage() {
   const [searchParams] = useSearchParams();

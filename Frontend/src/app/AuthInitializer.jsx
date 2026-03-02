@@ -4,6 +4,7 @@ import { useDashboardAPIQuery } from "../Redux/slices/apiSlice";
 import { setAuth, logout } from "../Redux/slices/authSlice";
 import { Loader } from "../components/Common";
 import { useSelector } from "react-redux";
+
 const AuthInitializer = ({ children }) => {
   const dispatch = useDispatch();
   const { isCheckingAuth, isAuthenticated } = useSelector(
@@ -39,3 +40,5 @@ const AuthInitializer = ({ children }) => {
 
   return children;
 };
+
+export default AuthInitializer;
