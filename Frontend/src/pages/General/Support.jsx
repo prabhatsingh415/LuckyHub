@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
@@ -50,6 +50,9 @@ const Support = () => {
     },
   ];
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   return (
     <div className={theme === "dark" ? "dark" : ""}>
       <div className="min-h-screen bg-white text-zinc-900 dark:bg-black dark:text-white font-sans selection:bg-red-500/30 transition-colors duration-300">
@@ -141,21 +144,20 @@ const Support = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-b from-zinc-100 to-white dark:from-zinc-900/50 dark:to-black border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 text-center shadow-sm dark:shadow-none">
-            <div className="bg-red-600/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Mail className="text-red-500" size={28} />
-            </div>
-            <h2 className="text-2xl font-bold mb-2">Still have questions?</h2>
-            <p className="text-zinc-600 dark:text-zinc-500 text-sm mb-8 max-w-sm mx-auto">
-              Since this is a personal project, feel free to reach out to me via
-              email for feedback or tech talk!
+          <div className="mt-12 p-8 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#0a0a0a] text-center shadow-sm dark:shadow-none">
+            <Mail className="w-6 h-6 text-red-500 mx-auto mb-3" />
+            <h3 className="font-bold mb-2 text-zinc-800 dark:text-white">
+              Questions about these Terms?
+            </h3>
+            <p className="text-zinc-500 text-sm mb-4 font-mono">
+              support@luckyhub.com
             </p>
-            <a
-              href="mailto:your-email@example.com"
-              className="inline-flex items-center gap-2 bg-zinc-900 text-white dark:bg-white dark:text-black px-8 py-3 rounded-full font-bold text-sm hover:bg-black dark:hover:bg-zinc-200 transition-all transform hover:scale-105"
+            <button
+              onClick={() => navigate(-1)}
+              className="text-zinc-500 dark:text-zinc-400 hover:text-red-500 flex items-center gap-2 mx-auto text-sm transition-colors font-medium"
             >
-              Send an Email
-            </a>
+              <ArrowLeft className="w-4 h-4" /> Back to Previous Page
+            </button>
           </div>
         </div>
       </div>

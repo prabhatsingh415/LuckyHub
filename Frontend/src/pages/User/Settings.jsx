@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDashboardAPIQuery } from "../../Redux/slices/apiSlice";
 import { InfoModal, Loader } from "../../components/Common";
 import {
@@ -8,6 +8,7 @@ import {
   LastPaymentSection,
   AccountActionsSection,
 } from "../../components/Settings";
+import { useLocation } from "react-router-dom";
 
 export default function Settings() {
   const [modal, setModal] = useState({
@@ -41,6 +42,21 @@ export default function Settings() {
     );
   }
 
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash === "#sub") {
+      const timer = setTimeout(() => {
+        const element = document.getElementById("sub");
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [location, dashboardLoading]);
+
   return (
     <div className="w-full dark:bg-[#0a0a0a] flex flex-col justify-center p-4 gap-8 dark:text-white">
       {/* Header */}
@@ -62,7 +78,9 @@ export default function Settings() {
         <PasswordSection setModal={setModal} />
 
         {/* Subscription */}
-        <SubscriptionSection dashboardData={dashboardData} />
+        <div id="sub">
+          <SubscriptionSection dashboardData={dashboardData} />
+        </div>
 
         {/* Payment Details */}
         <LastPaymentSection />

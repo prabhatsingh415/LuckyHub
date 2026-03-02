@@ -17,16 +17,20 @@ function GiveawayInsights() {
 
   const { data: historyData } = useHistoryQuery(undefined, {
     skip: !accessToken,
+    refetchOnMountOrArgChange: true,
   });
 
   const chartData = historyData
-    ? historyData.history.map((item, index) => ({
+    ? historyData.map((item, index) => ({
         id: index + 1,
         winnersCount: item.winnersCount,
         commentCount: item.commentCount,
         date: new Date(item.createdAt).toLocaleDateString(),
       }))
     : [];
+
+  const brandOrange = "#ff4d29";
+
   return (
     <div className="w-full lg:flex-1 flex flex-col border-2 border-zinc-200 dark:border-zinc-800 rounded-xl gap-8 p-4">
       {/* Heading */}
@@ -44,24 +48,56 @@ function GiveawayInsights() {
           Daily / Weekly breakdown
         </p>
 
-        <div className="w-full h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" />
-              <XAxis dataKey="date" stroke="#ff3333" allowDecimals={false} />
-              <YAxis stroke="#ff3333" domain={[1, 10]} allowDecimals={false} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#1f2937",
-                  borderRadius: "8px",
-                  color: "#fff",
-                  border: "none",
-                }}
-              />
-              <Line type="monotone" dataKey="winnersCount" stroke="#8884d8" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        {chartData.length !== 0 ? (
+          <div className="w-full h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#374151"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="date"
+                  stroke={brandOrange}
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke={brandOrange}
+                  domain={[0, "auto"]}
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#111827",
+                    borderRadius: "12px",
+                    color: "#fff",
+                    border: "1px solid #374151",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="winnersCount"
+                  stroke={brandOrange}
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: brandOrange, strokeWidth: 2 }}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="w-full h-64 flex items-center justify-center">
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              No giveaway history found. Run a giveaway to see insights here.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col border border-zinc-300 dark:border-zinc-700 rounded-xl p-4">
@@ -71,34 +107,54 @@ function GiveawayInsights() {
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
           How many comments you processed
         </p>
-
-        <div className="w-full h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="date" stroke="#9ca3af" />
-              <YAxis
-                stroke="#9ca3af"
-                domain={[1, 1000]}
-                allowDecimals={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#1f2937",
-                  borderRadius: "8px",
-                  color: "#fff",
-                  border: "none",
-                }}
-              />
-              <Bar
-                dataKey="commentCount"
-                fill="#facc15"
-                barSize={32}
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {chartData.length !== 0 ? (
+          <div className="w-full h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#374151"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="date"
+                  stroke={brandOrange}
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke={brandOrange}
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  cursor={{ fill: "rgba(255, 77, 41, 0.1)" }}
+                  contentStyle={{
+                    backgroundColor: "#111827",
+                    borderRadius: "12px",
+                    color: "#fff",
+                    border: "1px solid #374151",
+                  }}
+                />
+                <Bar
+                  dataKey="commentCount"
+                  fill={brandOrange}
+                  barSize={32}
+                  radius={[6, 6, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="w-full h-64 flex items-center justify-center">
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              No giveaway history found. Run a giveaway to see insights here.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

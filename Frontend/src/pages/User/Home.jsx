@@ -17,6 +17,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { InfoModal } from "../../components/Common";
+import { useOutletContext } from "react-router-dom";
 
 // --- Reward Options ---
 const REWARD_PLATFORMS = [
@@ -44,6 +45,7 @@ function Home() {
   const [urls, setUrls] = useState([""]);
   const [winnersCount, setWinnersCount] = useState("1");
   const [keyword, setKeyword] = useState("");
+  const { setNavigationLocked } = useOutletContext();
 
   // 'input' -> 'fetching' -> 'countdown' -> 'result'
   const [gameState, setGameState] = useState("input");
@@ -104,6 +106,7 @@ function Home() {
   // --- Pick Winners ---
   const handlePickWinner = async () => {
     try {
+      setNavigationLocked(true);
       setGameState("fetching");
 
       // 1. Fetch Data
@@ -121,6 +124,7 @@ function Home() {
         throw new Error("No eligible comments found.");
       }
     } catch (err) {
+      setNavigationLocked(false);
       setGameState("input");
       setModal({
         open: true,
@@ -141,6 +145,7 @@ function Home() {
         setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(timer);
+            setNavigationLocked(false);
             setGameState("result"); // Trigger Result
             triggerConfetti();
             return 0;
@@ -182,6 +187,7 @@ function Home() {
   // --- Reset ---
   const resetGiveaway = () => {
     setGameState("input");
+    setNavigationLocked(false);
     setCountdown(3);
     setUrls([""]);
     setKeyword("");
@@ -428,6 +434,7 @@ function Home() {
           type={modal.type}
           okText="OK"
           onOk={() => setModal({ ...modal, open: false })}
+          isContainsResendBtn={false}
         />
       )}
     </div>

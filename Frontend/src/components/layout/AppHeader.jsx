@@ -1,20 +1,28 @@
-import { Menu, House, ChartColumn, Settings, X, Sun, Moon } from "lucide-react";
+import {
+  Menu,
+  House,
+  ChartColumn,
+  Settings,
+  History,
+  X,
+  Sun,
+  Moon,
+} from "lucide-react";
 import { NavLink } from "react-router-dom";
-import { logoDark, logoLight } from "../../"; // Ensure this path is correct
+import { logoDark, logoLight } from "../../";
 import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import { toggleTheme } from "../../Redux/slices/themeSlice"; // Ensure path is correct
+import { toggleTheme } from "../../Redux/slices/themeSlice";
 import { useState } from "react";
 
-function AppHeader() {
+function AppHeader({ navigationLocked }) {
   const theme = useSelector((state) => state.theme.mode);
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const menuItems = [
     { label: "Home", to: "/home", icon: <House size={20} /> },
     { label: "Dashboard", to: "/dashboard", icon: <ChartColumn size={20} /> },
+    { label: "History", to: "/history", icon: <History size={20} /> },
     { label: "Settings", to: "/settings", icon: <Settings size={20} /> },
   ];
 
@@ -86,20 +94,29 @@ function AppHeader() {
           {theme === "dark" ? <Sun color="#FFFFFF" /> : <Moon />}
         </button>
       </header>
-      <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-[#fafafa] dark:bg-[#0a0a0a] border-r border-[#f7f7f7] dark:border-[#1f1f1f] transition-transform duration-300 ease-in-out
-          ${
-            isMenuOpen ? "translate-x-0" : "-translate-x-full"
-          } lg:translate-x-0 lg:static lg:block shrink-0`}
-      >
-        <div className="lg:hidden flex justify-end p-4">
-          <button onClick={() => setIsMenuOpen(false)}>
-            <X color={theme === "dark" ? "white" : "black"} size={28} />
-          </button>
-        </div>
 
-        {SidebarContent}
-      </aside>
+      <div className="relative">
+        <aside
+          className={`fixed top-0 left-0 z-50 h-screen w-64 
+      ${navigationLocked ? "pointer-events-none opacity-60" : ""}
+      bg-[#fafafa] dark:bg-[#0a0a0a] border-r border-[#f7f7f7] 
+      dark:border-[#1f1f1f] transition-transform duration-300 ease-in-out
+      ${isMenuOpen ? "translate-x-0" : "-translate-x-full"} 
+      lg:translate-x-0 lg:static lg:block shrink-0`}
+        >
+          <div className="lg:hidden flex justify-end p-4">
+            <button onClick={() => setIsMenuOpen(false)}>
+              <X color={theme === "dark" ? "white" : "black"} size={28} />
+            </button>
+          </div>
+
+          {SidebarContent}
+        </aside>
+
+        {navigationLocked && (
+          <div className="absolute inset-0 z-[60] cursor-not-allowed" />
+        )}
+      </div>
 
       {isMenuOpen && (
         <div

@@ -1,6 +1,6 @@
 import { logoDark, logoLight } from "../..";
 import { useSelector } from "react-redux";
-import { Link as ScrollLink } from "react-scroll";
+import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { SocialIcon } from "./";
 import { XIcon, LinkedInIcon } from "../..";
@@ -20,40 +20,26 @@ function Footer() {
       </div>
 
       <nav className="flex md:flex-col md:gap-4 md:mt-8 lg:flex-row justify-center items-center gap-8 text-lg font-semibold text-black dark:text-white flex-1 ">
-        <ScrollLink
-          to="pricing"
-          smooth={true}
-          duration={500}
-          offset={-70}
+        <Link
+          to="/privacy-policy"
           className="hover:text-[var(--orange)] cursor-pointer text-sm"
-          onClick={() => navigate("/privacy-policy")}
         >
           Privacy Policy
-        </ScrollLink>
-        <ScrollLink
-          to="features"
-          smooth={true}
-          duration={500}
-          offset={-70}
+        </Link>
+        <Link
+          to="/terms-of-service"
           className="hover:text-[var(--orange)] cursor-pointer text-sm"
-          onClick={() => navigate("/terms-of-service")}
         >
           Terms of Service
-        </ScrollLink>
-        <ScrollLink
-          to="faq"
-          smooth={true}
-          duration={500}
-          offset={-70}
+        </Link>
+        <Link
+          to="/support"
           className="hover:text-[var(--orange)] cursor-pointer text-sm"
-          onClick={() => navigate("/support")}
         >
           Support
-        </ScrollLink>
+        </Link>
       </nav>
-
       <hr className="md:hidden border-t-2  border-t-[#f7f7f7] dark:border-t-[#121212] w-[calc(100%-4rem)] md:w-[calc(100%-8rem)] mx-auto my-8" />
-
       <div className="flex justify-center items-center">
         <nav className="flex gap-8">
           <SocialIcon
@@ -75,9 +61,7 @@ function Footer() {
           />
         </nav>
       </div>
-
       <hr className="md:col-span-3 border-t-2  border-t-[#f7f7f7] dark:border-t-[#121212] w-[calc(100%-4rem)] md:w-[calc(100%-8rem)] mx-auto my-8" />
-
       <div className="flex flex-col justify-center items-center md:col-span-3 md:row-start-3gap-4 dark:text-[#a1a1a1] text-sm mb-8">
         <p>© 2025 LuckyHub. All rights reserved. </p>
         <p>Developed By Prabhat Singh</p>

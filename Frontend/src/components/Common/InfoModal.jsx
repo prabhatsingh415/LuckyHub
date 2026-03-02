@@ -25,7 +25,7 @@ export default function InfoModal({
   };
 
   const MAX_ATTEMPTS = 3;
-  const COOL_DOWN_15M = 10; // 15 min timer
+  const COOL_DOWN_15M = 15 * 60;
   const RESET_TIME_24H = 24 * 60 * 60 * 1000;
 
   const ATTEMPTS_KEY = `resendAttempts_${userEmail}`;

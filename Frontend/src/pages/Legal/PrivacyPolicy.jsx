@@ -111,6 +111,9 @@ const PrivacyPolicy = () => {
     },
   ];
 
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   return (
     <div className={theme === "dark" ? "dark" : ""}>
       <div className="min-h-screen bg-white text-zinc-900 dark:bg-black dark:text-white py-12 px-4 sm:px-6 transition-colors duration-300">
@@ -186,29 +189,19 @@ const PrivacyPolicy = () => {
             ))}
           </div>
 
-          <div className="mt-12 p-8 rounded-2xl border border-zinc-200 dark:border-red-900/30 bg-zinc-50 dark:bg-[#0a0a0a] text-center shadow-sm dark:shadow-none">
-            <Mail className="w-8 h-8 text-red-500 mx-auto mb-3" />
-            <h2 className="text-xl font-bold mb-2 text-zinc-800 dark:text-white">
-              Questions?
-            </h2>
-            <p className="text-zinc-500 text-sm mb-6">
-              Our team is happy to help with any data-related queries.
+          <div className="mt-12 p-8 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#0a0a0a] text-center shadow-sm dark:shadow-none">
+            <Mail className="w-6 h-6 text-red-500 mx-auto mb-3" />
+            <h3 className="font-bold mb-2 text-zinc-800 dark:text-white">
+              Questions about these Terms?
+            </h3>
+            <p className="text-zinc-500 text-sm mb-4 font-mono">
+              support@luckyhub.com
             </p>
-            <a
-              href="mailto:privacy@luckyhub.com"
-              className="inline-block bg-zinc-900 text-white dark:bg-red-600 dark:hover:bg-red-700 font-bold py-2.5 px-10 rounded-full transition-all transform hover:scale-105"
-            >
-              Contact Support
-            </a>
-          </div>
-
-          <div className="mt-10 text-center pb-12">
             <button
               onClick={() => navigate(-1)}
-              className="group flex items-center gap-2 mx-auto text-zinc-500 hover:text-red-500 transition-colors text-sm font-medium"
+              className="text-zinc-500 dark:text-zinc-400 hover:text-red-500 flex items-center gap-2 mx-auto text-sm transition-colors font-medium"
             >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-              Back to Previous Page
+              <ArrowLeft className="w-4 h-4" /> Back to Previous Page
             </button>
           </div>
         </div>

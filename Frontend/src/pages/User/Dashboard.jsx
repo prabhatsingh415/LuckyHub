@@ -7,7 +7,9 @@ import {
 } from "../../components/Dashboard";
 
 function Dashboard() {
-  const { data, error, isLoading } = useDashboardAPIQuery();
+  const { data, error, isLoading } = useDashboardAPIQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
 
   if (isLoading) {
     return <Loader />;

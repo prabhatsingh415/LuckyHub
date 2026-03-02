@@ -99,17 +99,6 @@ const FAQ = () => {
             </div>
           ))}
         </div>
-
-        {/* Footer Support Note */}
-        <div className="mt-12 text-center text-zinc-500 text-sm">
-          Still have questions?{" "}
-          <a
-            href="#contact"
-            className="text-red-500 hover:text-red-600 font-medium hover:underline"
-          >
-            Contact our support team
-          </a>
-        </div>
       </div>
     </div>
   );

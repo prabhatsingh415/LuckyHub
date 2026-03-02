@@ -95,7 +95,7 @@ function UpgradePlan() {
           message={modal.message}
           type={modal.type}
           okText={modal.okText}
-          isContainsResendBtn={modal.isContainsResendBtn}
+          isContainsResendBtn={false}
           onOk={modal.onOk}
         />
       )}

@@ -1,9 +1,9 @@
 import { Trophy, User, Mail, Award, MessageSquare } from "lucide-react";
 
 function AccountInformation({ data }) {
-  const remaining = data?.user?.remainingGiveaways || 0;
-  const used = Number(data?.user?.winnersSelectedThisMonth) || 0;
   const total = Number(data?.user?.maxGiveaways) || 0;
+  const remaining = Number(data?.user?.remainingGiveaways) || 0;
+  const used = Math.min(total, total - remaining);
 
   const percent =
     total > 0 ? Math.min(Math.round((used / total) * 100), 100) : 0;

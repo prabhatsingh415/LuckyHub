@@ -15,6 +15,7 @@ import PublicRoute from "./PublicRoute.jsx";
 import { TermsOfService, PrivacyPolicy } from "../pages/Legal";
 import { UpgradePlan, ReviewOrder } from "../pages/Payment";
 import { Support, LandingPage } from "../pages/General";
+import NotFound from "../components/Common/NotFound.jsx";
 
 export const router = createBrowserRouter([
   { path: "/", element: <PublicRoute element={<LandingPage />} /> },
@@ -48,9 +49,13 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute element={<Settings />} />,
       },
       {
-        path: "/history", 
-        element: <ProtectedRoute element={<History/>} />
-      }
+        path: "/history",
+        element: <ProtectedRoute element={<History />} />,
+      },
     ],
+  },
+  {
+    path: "*",
+    element: <ProtectedRoute element={<NotFound />} />,
   },
 ]);
