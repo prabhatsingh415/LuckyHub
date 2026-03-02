@@ -23,21 +23,19 @@ function VerifyUserPage() {
 
   useEffect(() => {
     if (isSuccess && data?.token && data?.user) {
-      dispatch(
-        setCredentials({
-          token: data.token,
-        })
-      );
+      dispatch(setCredentials({ token: data.token }));
 
       dispatch(
         setAuth({
           isAuthenticated: true,
           user: data.user,
+          isCheckingAuth: false,
         })
       );
+
       const timer = setTimeout(() => {
         handleContinue();
-      }, 2000);
+      }, 1500);
 
       return () => clearTimeout(timer);
     }

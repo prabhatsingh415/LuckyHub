@@ -4,16 +4,26 @@ import { useDashboardAPIQuery } from "../Redux/slices/apiSlice";
 import { setAuth, logout } from "../Redux/slices/authSlice";
 import { Loader } from "../components/Common";
 import { useSelector } from "react-redux";
-
 const AuthInitializer = ({ children }) => {
   const dispatch = useDispatch();
-  const { isCheckingAuth } = useSelector((state) => state.userDetails);
+  const { isCheckingAuth, isAuthenticated } = useSelector(
+    (state) => state.userDetails
+  );
+  const token = useSelector((state) => state.auth.accessToken);
 
-  const { data, isError, isSuccess } = useDashboardAPIQuery(undefined, {
-    skip: !isCheckingAuth,
-  });
+  const { data, isError, isSuccess, isLoading } = useDashboardAPIQuery(
+    undefined,
+    {
+      skip: !isCheckingAuth || isAuthenticated || !token,
+    }
+  );
 
   useEffect(() => {
+    if (isAuthenticated && isCheckingAuth) {
+      dispatch(setAuthenticating(false));
+      return;
+    }
+
     if (isCheckingAuth) {
       if (isSuccess && data) {
         dispatch(setAuth({ isAuthenticated: true, user: data }));
@@ -21,13 +31,11 @@ const AuthInitializer = ({ children }) => {
         dispatch(logout());
       }
     }
-  }, [isSuccess, isError, data, dispatch, isCheckingAuth]);
+  }, [isSuccess, isError, data, dispatch, isCheckingAuth, isAuthenticated]);
 
-  if (isCheckingAuth) {
+  if (isCheckingAuth && isLoading) {
     return <Loader />;
   }
 
   return children;
 };
-
-export default AuthInitializer;
