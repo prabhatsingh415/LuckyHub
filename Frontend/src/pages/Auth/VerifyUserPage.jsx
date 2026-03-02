@@ -8,6 +8,7 @@ import {
 import { setCredentials } from "../../Redux/slices/credentialSlice";
 import { Loader } from "../../components/Common";
 
+import { setAuth } from "../../Redux/slices/authSlice";
 function VerifyUserPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
@@ -24,11 +25,16 @@ function VerifyUserPage() {
     if (isSuccess && data?.token && data?.user) {
       dispatch(
         setCredentials({
-          user: data.user,
           token: data.token,
         })
       );
 
+      dispatch(
+        setAuth({
+          isAuthenticated: true,
+          user: data.user,
+        })
+      );
       const timer = setTimeout(() => {
         handleContinue();
       }, 2000);
