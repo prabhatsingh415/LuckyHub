@@ -94,7 +94,7 @@ function SignIn() {
           message="Signed in successfully !"
           isContainsResendBtn={false}
           okText="ok"
-          redirectUrl={"http://localhost:5173/"}
+          redirectUrl={"/home"}
           onOk={() => reset()}
         />
       )}
