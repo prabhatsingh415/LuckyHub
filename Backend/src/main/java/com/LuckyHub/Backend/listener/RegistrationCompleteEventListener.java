@@ -12,7 +12,6 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
 
 @Component
 @Async
@@ -31,7 +30,6 @@ public class RegistrationCompleteEventListener implements ApplicationListener<Re
 
         try {
             emailService.sendEmail(user.getEmail(), "LuckyHub | Verify Your Email Address", url, MailType.VERIFICATION);
-            emailService.sendEmail(user.getEmail(), "habibi", "Okk", MailType.PAYMENT_REFUND);
         } catch (Exception e) {
             throw new EmailSendingFailedException("Failed to send registration email", e);
         }
