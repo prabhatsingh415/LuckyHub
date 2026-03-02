@@ -2,7 +2,7 @@ import { useState } from "react";
 import { User, LogOut, Trash2 } from "lucide-react";
 import { useAccountActions } from "./hooks/useAccountActions";
 import CautionModal from "./CautionModal";
-import OTPVerificationModal from "./OtpVerificationModal";
+import OTPVerificationModal from "./OTPVerificationModal";
 
 function AccountActionsSection({ setModal }) {
   const {
@@ -11,7 +11,6 @@ function AccountActionsSection({ setModal }) {
     handleCautionConfirm,
     handleVerifyOTP,
     closeModals,
-    showCaution,
     showOtpModal,
     isVerifying,
   } = useAccountActions(setModal);
