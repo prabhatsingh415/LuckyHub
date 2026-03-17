@@ -27,6 +27,13 @@ public class UserController {
     private final OtpService otpService;
 
 
+    @GetMapping("/wakeup")
+    public ResponseEntity<String> wakeup() {
+        log.info("Keep-alive ping received!");
+        return ResponseEntity.ok("LuckyHub is awake !");
+    }
+
+
     // -------------------- SIGNUP --------------------
     @PostMapping("/signup")
     public ResponseEntity<?> signUp(@Valid  @RequestBody UserModel userModel) {

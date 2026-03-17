@@ -46,6 +46,7 @@ public class WebSecurityConfig {
                         .requestMatchers(
                                 "/user/signup",
                                 "/user/login",
+                                "/user/wakeup",
                                 "/user/verifyRegistration",
                                 "/auth/google/callback",
                                 "/user/resendToken",
