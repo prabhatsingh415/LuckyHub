@@ -21,13 +21,13 @@ function VerifyUserPage() {
     useLazyResendVerificationQuery();
 
   useEffect(() => {
-    if (isSuccess && data?.token && data?.user) {
-      dispatch(setCredentials({ token: data.token }));
+    if (isSuccess && data?.accessToken) {
+      dispatch(setCredentials({ token: data.accessToken }));
 
       dispatch(
         setAuth({
           isAuthenticated: true,
-          user: data.user,
+          user: data.user || { email: data.email },
           isCheckingAuth: false,
         })
       );

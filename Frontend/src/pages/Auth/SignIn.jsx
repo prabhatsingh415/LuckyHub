@@ -3,11 +3,15 @@ import { Form, Loader, InfoModal } from "../../components/Common";
 import { useForm } from "react-hook-form";
 import { useEffect } from "react";
 import { Lock, Mail } from "lucide-react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useSignInMutation } from "../../Redux/slices/apiSlice";
+import { useNavigate } from "react-router-dom";
 
 function SignIn() {
   const theme = useSelector((state) => state.theme.mode);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
   const {
     register,
     handleSubmit,
@@ -77,11 +81,18 @@ function SignIn() {
   );
 
   useEffect(() => {
-    if (isSuccess) {
+    if (isSuccess && data) {
       localStorage.setItem("isSignIn", "true");
-    }
-  }, [isSuccess, data]);
 
+      dispatch(
+        setAuth({
+          isAuthenticated: true,
+          user: data.user || null,
+          isCheckingAuth: false,
+        })
+      );
+    }
+  }, [isSuccess, data, dispatch]);
   return (
     <div className="w-full flex flex-col justify-center items-center dark:text-white">
       {isLoading && <Loader />}
@@ -95,7 +106,10 @@ function SignIn() {
           isContainsResendBtn={false}
           okText="ok"
           redirectUrl={"/home"}
-          onOk={() => reset()}
+          onOk={() => {
+            reset();
+            navigate("/home");
+          }}
         />
       )}
 

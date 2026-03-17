@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { useDashboardAPIQuery } from "../Redux/slices/apiSlice";
-import { setAuth, logout } from "../Redux/slices/authSlice";
+import { setAuth, logout, setAuthenticating } from "../Redux/slices/authSlice";
 import { Loader } from "../components/Common";
 import { useSelector } from "react-redux";
 
@@ -20,17 +20,21 @@ const AuthInitializer = ({ children }) => {
   );
 
   useEffect(() => {
-    if (isAuthenticated && isCheckingAuth) {
-      dispatch(setAuthenticating(false));
+    if (!token) {
+      dispatch(logout());
       return;
     }
 
-    if (isCheckingAuth) {
-      if (isSuccess && data) {
-        dispatch(setAuth({ isAuthenticated: true, user: data }));
-      } else if (isError) {
-        dispatch(logout());
-      }
+    if (isSuccess && data) {
+      dispatch(setAuth({ isAuthenticated: true, user: data }));
+    }
+
+    if (isError) {
+      dispatch(logout());
+    }
+
+    if (isAuthenticated) {
+      dispatch(setAuthenticating(false));
     }
   }, [isSuccess, isError, data, dispatch, isCheckingAuth, isAuthenticated]);
 
