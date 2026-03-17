@@ -1,7 +1,9 @@
 import { useEffect } from "react";
+import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 export default function AuthSuccess() {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const redirectEndpoint = localStorage.getItem("redirectEndpoint") || "/home";
 

@@ -15,16 +15,11 @@ const AuthInitializer = ({ children }) => {
   const { data, isError, isSuccess, isLoading } = useDashboardAPIQuery(
     undefined,
     {
-      skip: !isCheckingAuth || isAuthenticated || !token,
+      skip: isAuthenticated,
     }
   );
 
   useEffect(() => {
-    if (!token) {
-      dispatch(logout());
-      return;
-    }
-
     if (isSuccess && data) {
       dispatch(setAuth({ isAuthenticated: true, user: data }));
     }
@@ -36,7 +31,7 @@ const AuthInitializer = ({ children }) => {
     if (isAuthenticated) {
       dispatch(setAuthenticating(false));
     }
-  }, [isSuccess, isError, data, dispatch, isCheckingAuth, isAuthenticated]);
+  }, [isSuccess, isError, data, dispatch, isAuthenticated]);
 
   if (isCheckingAuth && isLoading) {
     return <Loader />;

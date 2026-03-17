@@ -5,11 +5,12 @@ export default function GoogleOAuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const code = searchParams.get("code");
+  const redirectURL = import.meta.env.VITE_API_BASE_URL
 
   useEffect(() => {
     if (code) {
       // send the code to backend for token exchange
-      fetch(`http://localhost:8080/auth/google/callback?code=${code}`, {
+      fetch(`${redirectURL}?code=${code}`, {
         method: "GET",
       })
         .then((res) => res.json())

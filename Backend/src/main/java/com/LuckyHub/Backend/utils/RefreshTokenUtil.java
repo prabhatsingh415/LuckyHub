@@ -13,7 +13,7 @@ public class RefreshTokenUtil {
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
-                .sameSite("Strict")
+                .sameSite("None")
                 .maxAge(14 * 24 * 60 * 60) // 14 days
                 .build();
     }
